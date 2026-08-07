@@ -1,26 +1,67 @@
-# Integration check against the real deposit.
+# Integration check against the live repository.
 #
-#   Rscript data-raw/verify_release.R
+#   Rscript data-raw/verify_release.R          # check the pinned version
+#   ICPIM_VERSION=2 Rscript data-raw/verify_release.R
 #
-# Reads every subprogramme through the package and checks it against what the
-# package claims, rather than against itself. Run this after each annual
-# dataset update, before bumping `icpim.version`: it is what catches a new
-# substance code, a changed column, or a subprogramme whose row count has
-# moved.
+# Nothing here is compared against numbers recorded in the package, because
+# the package no longer records any. It checks two things instead:
+#
+#   1. Internal consistency  - every file reads, types are right, every code
+#      and flag resolves, dates parse. These must hold in any release.
+#   2. Drift worth a human   - a new or renamed subprogramme, a code the
+#      published lists do not explain, a flag not in the manual.
+#
+# Exits non-zero on any problem, so it can run unattended in CI.
 #
 # Downloads ~95 MB on a cold cache. Set ICPIM_CACHE_DIR to reuse one.
 
 devtools::load_all(quiet = TRUE)
 options(icpim.quiet = TRUE)
 
-meta <- im_subprogrammes
-res <- list()
+if (nzchar(Sys.getenv("ICPIM_VERSION"))) {
+  options(icpim.version = Sys.getenv("ICPIM_VERSION"))
+}
+version <- im_version()
+
 problems <- character()
 note <- function(...) problems <<- c(problems, paste0(...))
 
-for (i in seq_len(nrow(meta))) {
-  sp <- meta$subprog[i]
-  x <- tryCatch(im_read(sp), error = function(e) e)
+cat("Checking ICP IM dataset version ", version, "\n\n", sep = "")
+
+# --- Is this still the newest release? ------------------------------------
+chk <- im_check_version(quiet = TRUE)
+if (is.na(chk$latest)) {
+  note("could not reach the repository to check for a newer version")
+} else if (chk$newer_available) {
+  cat("NOTE: version ", chk$latest, " has been published; this run checks ",
+      version, ".\n\n", sep = "")
+}
+
+# --- Does the file list match what the package expects? -------------------
+man <- im_manifest(version, "data")
+bundled <- im_subprogrammes
+
+added   <- setdiff(man$subprog, bundled$subprog)
+removed <- setdiff(bundled$subprog, man$subprog)
+if (length(added)) {
+  note("subprogramme(s) new in this release: ", paste(added, collapse = ", "),
+       " - add them to data-raw/make_data.R")
+}
+if (length(removed)) {
+  note("subprogramme(s) gone from this release: ", paste(removed, collapse = ", "))
+}
+renamed <- man$file[match(bundled$subprog, man$subprog)] != bundled$file
+renamed[is.na(renamed)] <- FALSE
+if (any(renamed)) {
+  note("file renamed: ",
+       paste(bundled$file[renamed], "->",
+             man$file[match(bundled$subprog[renamed], man$subprog)], collapse = "; "))
+}
+
+# --- Read everything ------------------------------------------------------
+res <- list()
+for (sp in man$subprog) {
+  x <- tryCatch(im_read(sp, version = version), error = function(e) e)
   if (inherits(x, "error")) {
     note(sp, ": READ FAILED - ", conditionMessage(x))
     next
@@ -29,24 +70,6 @@ for (i in seq_len(nrow(meta))) {
   key <- if ("SUBST" %in% names(x)) "SUBST" else "PARAM"
   dec <- if (key == "SUBST") "substance" else "parameter"
 
-  # The manifest is hand-recorded, so it is the thing most likely to drift.
-  if (nrow(x) != meta$n_rows[i]) {
-    note(sp, ": manifest says ", meta$n_rows[i], " rows, read ", nrow(x))
-  }
-  ns <- length(unique(x$AREA))
-  if (ns != meta$n_sites[i]) {
-    note(sp, ": manifest says ", meta$n_sites[i], " sites, read ", ns)
-  }
-  yr <- range(x$year, na.rm = TRUE)
-  if (yr[1] != meta$first_year[i] || yr[2] != meta$last_year[i]) {
-    note(sp, ": manifest years ", meta$first_year[i], "-", meta$last_year[i],
-         ", read ", yr[1], "-", yr[2])
-  }
-  if (key != meta$key[i]) {
-    note(sp, ": manifest key ", meta$key[i], " but file uses ", key)
-  }
-
-  # Typing
   if (!is.numeric(x$VALUE)) note(sp, ": VALUE is ", class(x$VALUE)[1])
   if ("SCODE" %in% names(x)) {
     if (!is.character(x$SCODE)) note(sp, ": SCODE is ", class(x$SCODE)[1])
@@ -54,16 +77,16 @@ for (i in seq_len(nrow(meta))) {
     if (length(bad)) note(sp, ": SCODE not 4 chars: ", paste(head(bad, 5), collapse = ","))
   }
 
-  # Every code resolves to a name
   undec <- unique(x[[key]][!is.na(x[[key]]) & is.na(x[[dec]])])
   if (length(undec)) {
-    note(sp, ": undecoded ", key, ": ", paste(head(undec, 10), collapse = ","))
+    note(sp, ": ", length(undec), " code(s) absent from the published lists: ",
+         paste(head(undec, 10), collapse = ","))
   }
 
-  # Every flag is one we know about
   for (fl in intersect(c("FLAGSTA", "FLAGQUA"), names(x))) {
     unk <- setdiff(unique(x[[fl]][!is.na(x[[fl]])]), im_flags$code[im_flags$type == fl])
-    if (length(unk)) note(sp, ": unknown ", fl, ": ", paste(unk, collapse = ","))
+    if (length(unk)) note(sp, ": ", fl, " value(s) not in the manual: ",
+                          paste(unk, collapse = ","))
   }
 
   if (any(is.na(x$year))) note(sp, ": ", sum(is.na(x$year)), " rows with no year")
@@ -81,17 +104,20 @@ for (i in seq_len(nrow(meta))) {
   })
 
   res[[sp]] <- data.frame(
-    subprog = sp, rows = nrow(x), sites = ns,
-    years = paste0(yr[1], "-", yr[2]),
-    sodium = if (key == "SUBST") sum(x$SUBST == "NA", na.rm = TRUE) else NA_integer_,
+    subprog = sp,
+    rows    = nrow(x),
+    sites   = length(unique(x$AREA)),
+    years   = paste0(min(x$year, na.rm = TRUE), "-", max(x$year, na.rm = TRUE)),
+    blank_subst = if (key == "SUBST") {
+      sum(is.na(x$SUBST)) + sum(x$SUBST == "NA", na.rm = TRUE)
+    } else NA_integer_,
     widen = wid
   )
 }
 
 out <- do.call(rbind, res)
 print(out, row.names = FALSE)
-cat("\ntotal rows:", format(sum(out$rows), big.mark = ","),
-    "| sodium restored:", format(sum(out$sodium, na.rm = TRUE), big.mark = ","), "\n\n")
+cat("\ntotal rows:", format(sum(out$rows), big.mark = ","), "\n\n")
 
 if (length(problems)) {
   cat("PROBLEMS (", length(problems), "):\n", sep = "")

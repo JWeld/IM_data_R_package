@@ -1,0 +1,119 @@
+# Watches the repository for a new dataset release, and verifies the package
+# still reads whatever is published. Runs monthly, so nobody has to remember.
+#
+# On a new version, or on any verification failure, it opens (or updates) a
+# GitHub issue. It never changes the pinned version: moving to a new release
+# is a deliberate act, because it changes the numbers an analysis returns.
+
+on:
+  schedule:
+    - cron: '0 6 1 * *'   # 06:00 UTC on the 1st of each month
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Dataset version to verify (blank = pinned default)'
+        required: false
+
+name: dataset-watch
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::devtools
+
+      - name: Check for a newer dataset version
+        id: check
+        run: |
+          Rscript -e '
+            devtools::load_all(quiet = TRUE)
+            chk <- im_check_version(quiet = TRUE)
+            latest <- if (is.na(chk$latest)) "unknown" else chk$latest
+            cat(sprintf("current=%s\n", chk$current), file = Sys.getenv("GITHUB_OUTPUT"), append = TRUE)
+            cat(sprintf("latest=%s\n", latest), file = Sys.getenv("GITHUB_OUTPUT"), append = TRUE)
+            cat(sprintf("newer=%s\n", tolower(chk$newer_available)), file = Sys.getenv("GITHUB_OUTPUT"), append = TRUE)
+            cat("current:", chk$current, " latest:", latest, "\n")
+          '
+
+      - name: Verify the package against the published data
+        id: verify
+        continue-on-error: true
+        env:
+          # Verify the new release if there is one, otherwise the pinned version.
+          ICPIM_VERSION: ${{ steps.check.outputs.newer == 'true' && steps.check.outputs.latest || '' }}
+        run: |
+          Rscript data-raw/verify_release.R 2>&1 | tee verify.log
+
+      - name: Open or update an issue when something needs attention
+        if: steps.check.outputs.newer == 'true' || steps.verify.outcome == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const log = fs.existsSync('verify.log')
+              ? fs.readFileSync('verify.log', 'utf8').slice(-8000)
+              : '(no output)';
+            const newer = '${{ steps.check.outputs.newer }}' === 'true';
+            const failed = '${{ steps.verify.outcome }}' === 'failure';
+            const latest = '${{ steps.check.outputs.latest }}';
+            const current = '${{ steps.check.outputs.current }}';
+
+            const title = newer
+              ? `ICP IM dataset version ${latest} published`
+              : `Dataset verification failing for version ${current}`;
+
+            const body = [
+              newer
+                ? `Version **${latest}** is available. The package is pinned to **${current}**.`
+                : `Verification of version **${current}** failed.`,
+              '',
+              failed
+                ? 'The verification run reported problems:'
+                : 'Verification passed against the new release, so reading it should already work.',
+              '',
+              '```',
+              log,
+              '```',
+              '',
+              '### To move to a new version',
+              '',
+              '1. `ICPIM_VERSION=<n> Rscript data-raw/verify_release.R` and read the output.',
+              '2. If it flags a new or renamed subprogramme, update `data-raw/make_data.R`',
+              '   and rerun it. Nothing else in the package records version-specific facts.',
+              '3. Change the default in `R/manifest.R` (`icpim.version`) and note it in `NEWS.md`.',
+              '',
+              'Row counts, file sizes and year ranges need no updating: `im_manifest()`',
+              'and `im_coverage()` measure them at run time.'
+            ].join('\n');
+
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner, repo: context.repo.repo,
+              state: 'open', labels: 'dataset-watch'
+            });
+            const match = existing.data.find(i => i.title === title);
+            if (match) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: match.number, body
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner, repo: context.repo.repo,
+                title, body, labels: ['dataset-watch']
+              });
+            }

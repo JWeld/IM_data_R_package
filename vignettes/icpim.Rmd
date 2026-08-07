@@ -26,7 +26,17 @@ encoding traps that are easy to walk into and hard to notice afterwards.
 ## What is in the dataset
 
 ```{r}
-im_subprogrammes[, c("subprog", "name", "n_rows", "n_sites")]
+im_subprogrammes
+```
+
+That table holds only what stays true between releases. Anything specific to
+one version is asked for at the time, so it cannot go stale: `im_manifest()`
+reads the current file list and sizes from the repository, and `im_coverage()`
+measures rows, sites and year ranges from the data itself.
+
+```{r, eval = FALSE}
+im_manifest()        # file list and sizes for the pinned version
+im_coverage("MC")    # what one subprogramme actually contains
 ```
 
 Sites, with coordinates:
@@ -196,6 +206,23 @@ implicit:
 halved <- im_detection_limit(pc, action = "half")
 ```
 
+## Recording what you used
+
+The version of `icpim` does not tell you which data an analysis used, and
+cannot: `icpim.version` is a runtime option, so the same package version reads
+any release. The record is attached to the data instead.
+
+```{r}
+pc <- im_read_file(im_example("sample_PC.csv"))
+im_provenance(pc)
+```
+
+Read through `im_read()` it carries the release and its DOI as well. The record
+survives `filter()`, `mutate()`, `select()`, `arrange()`, `im_widen()` and
+`saveRDS()`, so it is still there after reshaping and after a saved object is
+reloaded. It is dropped by `summarise()` and by joins, which build a genuinely
+new table; capture it first if you need it afterwards.
+
 ## Reproducibility
 
 The deposit is updated annually, and each release is a new version with its
@@ -207,8 +234,14 @@ im_version()
 im_doi()
 ```
 
-Move deliberately with `options(icpim.version = "2")`. The cache is keyed by
-version, so files from two releases are never mixed.
+Each release has its own DOI, and these follow the pinned version, so what you
+cite is always what you read. Record both in your output.
+
+`im_check_version()` reports whether a newer release has appeared. The package
+never follows it on its own: annual updates revise past values as well as
+adding new ones, so moving would change the numbers an existing analysis
+returns. Move deliberately with `options(icpim.version = "2")`. The cache is
+keyed by version, so files from two releases are never mixed.
 
 The data are CC BY 4.0, which requires attribution:
 

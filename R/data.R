@@ -1,7 +1,12 @@
 #' The ICP IM subprogrammes
 #'
-#' One row per subprogramme in the published deposit. Row counts, site counts
-#' and year ranges are measured from version 1, not asserted.
+#' One row per subprogramme, holding only what does not change between
+#' releases, so that this table stays correct as the dataset is updated.
+#'
+#' Anything version-specific is obtained at run time instead: [im_manifest()]
+#' reads the file list and sizes from the repository, and [im_coverage()]
+#' measures row counts, site counts and year ranges from the data. Neither
+#' needs this package to be changed when a new version is published.
 #'
 #' The `key` column records which column holds the measured quantity:
 #' chemistry subprogrammes use `SUBST` and biological ones use `PARAM`. The
@@ -9,21 +14,18 @@
 #' which corresponds to the reporting formats in the ICP IM Manual (`CHEM`,
 #' and `BIO1`/`BIO2` for the B1 and B2 formats).
 #'
-#' @format A tibble with 21 rows and 10 columns:
+#' @format A tibble with 21 rows and 5 columns:
 #' \describe{
 #'   \item{subprog}{Two-letter subprogramme code}
 #'   \item{name}{Descriptive name}
 #'   \item{file}{File name in the deposit}
 #'   \item{collection}{Reporting format group: `CHEM`, `BIO1` or `BIO2`}
 #'   \item{key}{Column holding the determinand: `SUBST` or `PARAM`}
-#'   \item{size_mb}{Approximate download size}
-#'   \item{n_rows}{Rows in version 1}
-#'   \item{n_sites}{Distinct sites in version 1}
-#'   \item{first_year, last_year}{Year range in version 1}
 #' }
 #' @source \doi{10.5878/z376-2m63}
+#' @seealso [im_manifest()] and [im_coverage()] for the version-specific facts.
 #' @examples
-#' im_subprogrammes[, c("subprog", "name", "n_rows")]
+#' im_subprogrammes
 "im_subprogrammes"
 
 #' ICP IM monitoring sites

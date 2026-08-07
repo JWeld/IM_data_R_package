@@ -26,6 +26,10 @@
 #'
 #' @param x A data frame from [im_read()] or [im_read_file()].
 #' @param quiet Logical. Suppress notes about codes that could not be matched.
+#' @param version Dataset version the code lists should come from. Defaults to
+#'   [im_version()]. Lists published with a version this package was not built
+#'   against are fetched and cached automatically, so a release that adds
+#'   substances decodes without any change here.
 #'
 #' @return `x` with added lowercase columns: `substance` or `parameter`,
 #'   and where the relevant column exists, `determination`, `pretreatment`,
@@ -38,22 +42,24 @@
 #'   im_decode(raw)
 #' }
 #' }
-im_decode <- function(x, quiet = TRUE) {
+im_decode <- function(x, quiet = TRUE, version = im_version()) {
   stopifnot(is.data.frame(x))
 
   if ("SUBST" %in% names(x)) {
-    x$substance <- decode_codes(x$SUBST, x[["LISTSUB"]])
+    x$substance <- decode_codes(x$SUBST, x[["LISTSUB"]], version = version)
     if (!quiet) report_unmatched(x$SUBST, x$substance, "substance")
   }
   if ("PARAM" %in% names(x)) {
-    x$parameter <- decode_codes(x$PARAM, x[["PARLIST"]])
+    x$parameter <- decode_codes(x$PARAM, x[["PARLIST"]], version = version)
     if (!quiet) report_unmatched(x$PARAM, x$parameter, "parameter")
   }
   if ("DETER" %in% names(x)) {
-    x$determination <- lookup(x$DETER, im_determinations$code, im_determinations$name)
+    d <- codes_for("determinations", version)
+    x$determination <- lookup(x$DETER, d$code, d$name)
   }
   if ("PRETRE" %in% names(x)) {
-    x$pretreatment <- lookup(x$PRETRE, im_pretreatments$code, im_pretreatments$name)
+    p <- codes_for("pretreatments", version)
+    x$pretreatment <- lookup(x$PRETRE, p$code, p$name)
   }
   if ("FLAGSTA" %in% names(x)) {
     f <- im_flags[im_flags$type == "FLAGSTA", ]
@@ -84,9 +90,11 @@ lookup <- function(codes, from, to) {
 #
 # No code carries two different meanings *within* the parameter list, so the
 # parameter lookup can be flattened across subprogrammes.
-decode_codes <- function(codes, lists = NULL) {
-  subst <- im_substances[!duplicated(im_substances$code), ]
-  par   <- unique(im_parameters[, c("code", "name")])
+decode_codes <- function(codes, lists = NULL, version = im_version()) {
+  substances <- codes_for("substances", version)
+  parameters <- codes_for("parameters", version)
+  subst <- substances[!duplicated(substances$code), ]
+  par   <- unique(parameters[, c("code", "name")])
   par   <- par[!duplicated(par$code), ]
 
   from_subst <- lookup(codes, subst$code, subst$name)
@@ -126,6 +134,8 @@ report_unmatched <- function(codes, decoded, what) {
 #' @param type Which list to return.
 #' @param pattern Optional regular expression, matched case-insensitively
 #'   against both code and name.
+#' @param version Dataset version the lists should come from. Defaults to
+#'   [im_version()].
 #'
 #' @return A tibble.
 #' @export
@@ -134,13 +144,14 @@ report_unmatched <- function(codes, decoded, what) {
 #' im_codes("flag")
 im_codes <- function(type = c("substance", "parameter", "determination",
                               "pretreatment", "flag"),
-                     pattern = NULL) {
+                     pattern = NULL,
+                     version = im_version()) {
   type <- match.arg(type)
   tbl <- switch(type,
-    substance     = im_substances,
-    parameter     = im_parameters,
-    determination = im_determinations,
-    pretreatment  = im_pretreatments,
+    substance     = codes_for("substances", version),
+    parameter     = codes_for("parameters", version),
+    determination = codes_for("determinations", version),
+    pretreatment  = codes_for("pretreatments", version),
     flag          = im_flags
   )
   if (!is.null(pattern)) {

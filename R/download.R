@@ -26,10 +26,16 @@
 im_download <- function(subprog, overwrite = FALSE, quiet = NULL,
                         version = im_version()) {
   quiet <- quiet %||% getOption("icpim.quiet", FALSE)
-  codes <- resolve_subprog(subprog, several.ok = TRUE)
-  meta  <- subprog_meta()
+  codes <- resolve_subprog(subprog, several.ok = TRUE, version = version)
+  meta  <- known_subprogs(version)
   meta  <- meta[match(codes, meta$subprog), ]
   dir   <- im_cache_dir(version, create = TRUE)
+
+  # Sizes come from the repository when it can be reached, so the figure
+  # quoted is the one for this release rather than a remembered one.
+  sizes <- stats::setNames(rep(NA_real_, length(codes)), codes)
+  man <- suppressWarnings(tryCatch(im_manifest(version, "data"), error = function(e) NULL))
+  if (!is.null(man)) sizes[codes] <- man$size_mb[match(codes, man$subprog)]
 
   paths <- vapply(seq_len(nrow(meta)), function(i) {
     file <- meta$file[i]
@@ -40,8 +46,9 @@ im_download <- function(subprog, overwrite = FALSE, quiet = NULL,
     }
     url <- im_file_url(file, "data", version)
     if (!quiet) {
+      sz <- sizes[[meta$subprog[i]]]
       cli::cli_alert_info(
-        "Downloading {.field {meta$subprog[i]}} ({meta$name[i]}), ~{meta$size_mb[i]} MB ..."
+        "Downloading {.field {meta$subprog[i]}} ({meta$name[i]}){if (is.na(sz)) '' else paste0(', ~', sz, ' MB')} ..."
       )
     }
     fetch_file(url, dest, quiet = quiet)
@@ -105,9 +112,8 @@ fetch_file <- function(url, dest, quiet = TRUE) {
 
 # Path to a cached file, downloading it first if needed.
 im_local_path <- function(subprog, version = im_version(), quiet = NULL) {
-  code <- resolve_subprog(subprog)
-  meta <- subprog_meta()
-  file <- meta$file[match(code, meta$subprog)]
+  code <- resolve_subprog(subprog, version = version)
+  file <- subprog_file(code, version)
   dest <- file.path(im_cache_dir(version, create = FALSE), file)
   if (!file.exists(dest)) {
     im_download(code, quiet = quiet, version = version)

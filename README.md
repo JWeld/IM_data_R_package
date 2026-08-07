@@ -31,7 +31,7 @@ pak::pak("JWeld/IM_data_R_package")
 library(icpim)
 
 # What is available
-im_subprogrammes[, c("subprog", "name", "n_rows")]
+im_subprogrammes
 
 # Read a subprogramme; the first call downloads and caches it
 pc <- im_read("PC", countries = "SE", years = 2000:2019)
@@ -88,6 +88,14 @@ version, so releases are never mixed.
 Files are cached under `tools::R_user_dir("icpim", "cache")`. Set
 `options(icpim.cache_dir = "data-raw/icpim")` to keep an analysis
 self-contained, or run `im_download("all")` (about 95 MB) before going offline.
+
+`im_check_version()` tells you whether a newer release has appeared. The
+package never moves on its own, since that would change the numbers an
+analysis returns. Nothing version-specific is hard-coded: the file list and
+sizes come from `im_manifest()`, row counts and year ranges from
+`im_coverage()`, and code lists for an unfamiliar release are fetched on
+first use. A renamed file, an added subprogramme or a new substance code
+therefore needs no update to this package.
 
 ## Citation
 

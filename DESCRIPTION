@@ -28,9 +28,11 @@ Imports:
     cli,
     curl,
     dplyr (>= 1.1.0),
+    jsonlite,
     rlang,
     tibble,
     tidyr,
+    stats,
     tools,
     vroom (>= 1.6.0)
 Suggests:

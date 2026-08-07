@@ -67,13 +67,15 @@ im_widen <- function(x,
     ))
   }
 
-  tidyr::pivot_wider(
+  out <- tidyr::pivot_wider(
     x,
     id_cols = dplyr::all_of(id_cols),
     names_from = dplyr::all_of(names_from),
     values_from = dplyr::all_of(values_from),
     values_fn = values_fn
   )
+  # pivot_wider builds a new table and drops attributes.
+  copy_provenance(out, x)
 }
 
 # Which columns differ between rows that share a pivot key? Almost always

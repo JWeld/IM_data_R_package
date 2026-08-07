@@ -1,0 +1,177 @@
+# Talking to the repository ------------------------------------------------
+#
+# Everything version-specific is asked for at run time rather than baked into
+# the package, so that a new annual release needs no code change. The bundled
+# tables are a fallback for working offline, not the source of truth.
+
+# Which dataset version the bundled tables were built from. Anything else is
+# fetched.
+IM_BUNDLED_VERSION <- "1"
+
+# One API call per version per session.
+im_api_dataset <- function(version = NULL) {
+  key <- paste0("api_", version %||% "latest")
+  if (!is.null(the[[key]])) return(the[[key]])
+
+  url <- if (is.null(version)) {
+    sprintf("%s/%s", IM_API_BASE, IM_DATASET_ID)
+  } else {
+    sprintf("%s/%s/%s", IM_API_BASE, IM_DATASET_ID, version)
+  }
+
+  raw <- tryCatch(curl::curl_fetch_memory(url), error = function(e) NULL)
+  if (is.null(raw) || raw$status_code != 200L) return(NULL)
+
+  js <- tryCatch(
+    jsonlite::fromJSON(rawToChar(raw$content), simplifyVector = TRUE),
+    error = function(e) NULL
+  )
+  # The API answers 200 with a null body for a version that does not exist,
+  # so the status code alone does not tell you whether it is there.
+  if (is.null(js) || is.null(js$dataset) || !length(js$dataset)) return(NULL)
+
+  the[[key]] <- js$dataset
+  js$dataset
+}
+
+#' Which dataset versions exist
+#'
+#' `im_latest_version()` asks the repository what the newest published version
+#' is. `im_version_exists()` checks a particular one.
+#'
+#' These are the basis of [im_check_version()], which is the one you would
+#' normally call. All of them need a network connection and return `NA` (or
+#' `FALSE`) without one.
+#'
+#' @param version Version to check, as a string.
+#'
+#' @return `im_latest_version()` returns a string, or `NA` if the repository
+#'   could not be reached. `im_version_exists()` returns a single logical.
+#' @export
+#' @examples
+#' \donttest{
+#' if (curl::has_internet()) {
+#'   im_latest_version()
+#' }
+#' }
+im_latest_version <- function() {
+  d <- im_api_dataset(NULL)
+  if (is.null(d)) return(NA_character_)
+  as.character(d$versionNumber)
+}
+
+#' @rdname im_latest_version
+#' @export
+im_version_exists <- function(version) {
+  !is.null(im_api_dataset(as.character(version)))
+}
+
+#' Check whether a newer dataset version has been published
+#'
+#' The deposit is updated annually. This package pins a version so that
+#' analyses stay reproducible, which means it will not move to a new release
+#' on its own - but it can tell you that one exists.
+#'
+#' Nothing here changes what you are reading. To move, set
+#' `options(icpim.version = "2")` deliberately, rerun your analysis, and
+#' compare.
+#'
+#' @param quiet Logical. Return the result without printing anything.
+#'
+#' @return Invisibly, a list with `current`, `latest` and `newer_available`.
+#' @export
+#' @examples
+#' \donttest{
+#' if (curl::has_internet()) {
+#'   im_check_version()
+#' }
+#' }
+im_check_version <- function(quiet = FALSE) {
+  current <- im_version()
+  latest  <- im_latest_version()
+  newer   <- !is.na(latest) &&
+    suppressWarnings(as.numeric(latest) > as.numeric(current))
+
+  if (!quiet) {
+    if (is.na(latest)) {
+      cli::cli_alert_warning("Could not reach the repository to check for updates.")
+    } else if (newer) {
+      cli::cli_alert_info(c(
+        "Version {.val {latest}} is available; you are reading {.val {current}}."
+      ))
+      cli::cli_alert_info(
+        "Move with {.code options(icpim.version = \"{latest}\")} when you are ready."
+      )
+    } else {
+      cli::cli_alert_success("Version {.val {current}} is the latest.")
+    }
+  }
+  invisible(list(current = current, latest = latest, newer_available = newer))
+}
+
+#' The files published in a given version
+#'
+#' Reads the file list straight from the repository, so a release that adds,
+#' renames or resizes a file is picked up without this package being changed.
+#' Falls back to the bundled catalogue when offline.
+#'
+#' @param version Dataset version. Defaults to [im_version()].
+#' @param type `"data"` for the subprogramme files, `"documentation"` for the
+#'   manual and code lists, or `"all"`.
+#'
+#' @return A tibble with `subprog`, `name`, `file`, `type` and `size_mb`.
+#'   The `subprog` and `name` columns are `NA` for documentation files.
+#' @export
+#' @examples
+#' \donttest{
+#' if (curl::has_internet()) {
+#'   im_manifest()
+#' }
+#' }
+im_manifest <- function(version = im_version(),
+                        type = c("data", "documentation", "all")) {
+  type <- match.arg(type)
+  d <- im_api_dataset(as.character(version))
+
+  if (is.null(d)) {
+    cli::cli_warn(c(
+      "Could not reach the repository; using the bundled catalogue.",
+      "i" = "It describes version {.val {IM_BUNDLED_VERSION}} and may be out of date."
+    ))
+    out <- tibble::tibble(
+      subprog = im_subprogrammes$subprog,
+      name    = im_subprogrammes$name,
+      file    = im_subprogrammes$file,
+      type    = "data",
+      size_mb = NA_real_
+    )
+    return(if (type == "documentation") out[0, ] else out)
+  }
+
+  f <- d$file
+  out <- tibble::tibble(
+    file    = as.character(f$name),
+    type    = as.character(f$type),
+    size_mb = round(as.numeric(f$contentSize) / 1024^2, 2)
+  )
+  out$subprog <- ifelse(
+    out$type == "data",
+    toupper(sub("_.*$", "", out$file)),
+    NA_character_
+  )
+  # Descriptive names come from the bundled catalogue where we have them; a
+  # subprogramme new in this release falls back to its file name.
+  out$name <- im_subprogrammes$name[match(out$subprog, im_subprogrammes$subprog)]
+  derived <- gsub("_", " ", sub("\\.csv$", "", sub("^[A-Za-z]+_", "", out$file)))
+  out$name[is.na(out$name) & !is.na(out$subprog)] <-
+    derived[is.na(out$name) & !is.na(out$subprog)]
+
+  out <- out[, c("subprog", "name", "file", "type", "size_mb")]
+  out <- out[order(!is.na(out$subprog) == FALSE, out$file), ]
+
+  switch(type,
+    data          = out[out$type == "data", ],
+    documentation = out[out$type == "documentation", ],
+    all           = out
+  )
+}

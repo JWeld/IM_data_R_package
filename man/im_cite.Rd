@@ -4,7 +4,10 @@
 \alias{im_cite}
 \title{Cite the ICP IM dataset}
 \usage{
-im_cite()
+im_cite(version = im_version())
+}
+\arguments{
+\item{version}{Dataset version. Defaults to \code{\link[=im_version]{im_version()}}.}
 }
 \value{
 The citation, invisibly, as a character vector. Called for its
@@ -14,6 +17,11 @@ side effect of printing.
 The dataset is published under CC BY 4.0, which requires attribution. This
 prints the citation for the data itself, which is \emph{not} the same as the
 citation for this package (see \code{citation("icpim")}).
+}
+\details{
+The citation is for the version being read, since each release has its own
+DOI. If that version's DOI cannot be established, this says so instead of
+printing a citation that points at the wrong release.
 }
 \examples{
 im_cite()

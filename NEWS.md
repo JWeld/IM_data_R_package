@@ -53,6 +53,38 @@ First release.
 * `im_detection_limit()` makes the treatment of below-detection values
   explicit.
 
+## Following the annual dataset updates
+
+The deposit is republished each year. Nothing version-specific is recorded in
+this package, so an ordinary release needs no code change:
+
+* `im_manifest()` reads the file list and sizes from the repository, so a
+  renamed file or an added subprogramme is picked up automatically.
+* `im_coverage()` measures row counts, site counts, year ranges and
+  determinand counts from the data rather than reciting stored figures.
+* `im_subprogrammes` keeps only what is stable between releases.
+* Code lists published with a version this package was not built against are
+  fetched and cached on first use, so a release that adds substances decodes
+  without an update. `im_update_codes()` refreshes them by hand.
+* `im_doi()`, `im_dataset_info()` and `im_cite()` follow the pinned version,
+  since each release has its own DOI. Where a version's DOI cannot be
+  established they report `NA` and say so, rather than returning the DOI of a
+  different release: citing the wrong version is worse than admitting the
+  value is unknown.
+* `im_provenance()` reports the dataset version, DOI, file, download time and
+  package version behind an object from `im_read()`. The record is attached to
+  the data because the package version cannot stand in for it: `icpim.version`
+  is a runtime option, so one package version reads any release, and two
+  people running the same package version can be on different data. It
+  survives subsetting, the common dplyr verbs, `im_widen()` and `saveRDS()`.
+* `im_check_version()` reports whether a newer release exists.
+  `im_latest_version()` and `im_version_exists()` sit underneath it. The
+  pinned version never moves on its own, because moving it changes the numbers
+  an analysis returns.
+* A monthly `dataset-watch` GitHub Action checks for a new release, runs
+  `data-raw/verify_release.R` against it, and opens an issue if either the
+  release is new or verification fails.
+
 ## Data
 
 * `im_subprogrammes`, `im_sites`, `im_substances`, `im_parameters`,

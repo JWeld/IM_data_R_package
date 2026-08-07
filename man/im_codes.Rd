@@ -6,7 +6,8 @@
 \usage{
 im_codes(
   type = c("substance", "parameter", "determination", "pretreatment", "flag"),
-  pattern = NULL
+  pattern = NULL,
+  version = im_version()
 )
 }
 \arguments{
@@ -14,6 +15,9 @@ im_codes(
 
 \item{pattern}{Optional regular expression, matched case-insensitively
 against both code and name.}
+
+\item{version}{Dataset version the lists should come from. Defaults to
+\code{\link[=im_version]{im_version()}}.}
 }
 \value{
 A tibble.

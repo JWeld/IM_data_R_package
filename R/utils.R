@@ -13,8 +13,8 @@ subprog_meta <- function() icpim::im_subprogrammes
 #' @param several.ok Allow more than one, and the keyword `"all"`.
 #' @return Upper-case subprogramme code(s).
 #' @noRd
-resolve_subprog <- function(x, several.ok = FALSE) {
-  meta <- subprog_meta()
+resolve_subprog <- function(x, several.ok = FALSE, version = im_version()) {
+  meta <- known_subprogs(version)
   if (!is.character(x) || !length(x)) {
     cli::cli_abort("{.arg subprog} must be a character vector of codes.")
   }
@@ -38,6 +38,26 @@ resolve_subprog <- function(x, several.ok = FALSE) {
     ))
   }
   up
+}
+
+# Subprogrammes available in a given release: the bundled catalogue for the
+# version it was built from, otherwise whatever the repository lists, so a
+# release that adds a subprogramme works without changing this package.
+known_subprogs <- function(version = im_version()) {
+  meta <- subprog_meta()
+  if (identical(as.character(version), IM_BUNDLED_VERSION)) return(meta)
+  man <- suppressWarnings(tryCatch(
+    im_manifest(version, "data"),
+    error = function(e) NULL
+  ))
+  if (is.null(man) || !nrow(man)) return(meta)
+  man[!is.na(man$subprog), c("subprog", "name", "file")]
+}
+
+# The published file name for a subprogramme in a given release.
+subprog_file <- function(code, version = im_version()) {
+  meta <- known_subprogs(version)
+  meta$file[match(code, meta$subprog)]
 }
 
 utils::globalVariables(c(

@@ -5,25 +5,34 @@
 \alias{im_dataset_info}
 \title{Identifiers for the underlying dataset}
 \usage{
-im_doi(concept = FALSE)
+im_doi(version = im_version(), concept = FALSE)
 
-im_dataset_info()
+im_dataset_info(version = im_version())
 }
 \arguments{
+\item{version}{Dataset version. Defaults to \code{\link[=im_version]{im_version()}}.}
+
 \item{concept}{Logical. Return the concept DOI (always latest) instead of
-the version DOI?}
+the DOI of this particular version?}
 }
 \value{
-A length-one character vector (\code{im_doi()}), or a list (\code{im_dataset_info()}).
+A length-one character vector (\code{im_doi()}), possibly \code{NA}; or a list
+(\code{im_dataset_info()}).
 }
 \description{
-Returns the DOIs, dataset identifier and citation for the deposit that this
-package reads.
+Returns the DOI, identifier and descriptive metadata for the dataset version
+currently being read.
 }
 \details{
-\code{im_doi()} gives the \emph{version} DOI by default. Use \code{concept = TRUE} for the
-concept DOI, which always resolves to the newest version. Cite the version
-you actually analysed.
+Every release has its own DOI, so these follow \code{\link[=im_version]{im_version()}}. Only version
+1 is known offline, because that is the release this package was built
+against; any other version is looked up in the repository. If it cannot be
+reached, \code{doi} is \code{NA} rather than a DOI belonging to a different release -
+citing the wrong version is worse than admitting the value is unknown.
+
+Use \code{concept = TRUE} for the concept DOI, which is version-independent and
+always resolves to the newest release. Cite the version you actually
+analysed, not the concept DOI.
 }
 \examples{
 im_doi()

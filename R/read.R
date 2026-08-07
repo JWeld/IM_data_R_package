@@ -112,7 +112,7 @@ im_read <- function(subprog,
                     quiet = NULL,
                     version = im_version()) {
   quiet <- quiet %||% getOption("icpim.quiet", FALSE)
-  code  <- resolve_subprog(subprog)
+  code  <- resolve_subprog(subprog, version = version)
   path  <- im_local_path(code, version = version, quiet = quiet)
 
   repair_now <- resolve_repair(repair, version)
@@ -154,7 +154,7 @@ im_read <- function(subprog,
     out <- filter_stat(out, stat)
   }
 
-  if (isTRUE(decode)) out <- im_decode(out, quiet = quiet)
+  if (isTRUE(decode)) out <- im_decode(out, quiet = quiet, version = version)
 
   # Nudge on FLAGSTA once per session, only when it actually bites.
   if (!quiet && !the$warned_flagsta && "FLAGSTA" %in% names(out) &&
@@ -167,7 +167,27 @@ im_read <- function(subprog,
     ))
   }
 
-  tibble::as_tibble(out)
+  out <- tibble::as_tibble(out)
+
+  # Set last: row subsetting keeps attributes, but the record should report the
+  # rows actually returned, and the release they came from.
+  set_provenance(
+    out,
+    subprog          = code,
+    file             = basename(path),
+    dataset_version  = as.character(version),
+    doi              = im_dataset_info(version)$doi,
+    downloaded       = tryCatch(file.mtime(path), error = function(e) NA),
+    read_at          = Sys.time(),
+    package_version  = as.character(utils::packageVersion("icpim")),
+    rows_read        = nrow(out),
+    # Counted on what is returned, not on the file, so it cannot look larger
+    # than `rows_read` after filtering. In version 1 no row carried the sodium
+    # code already, so every "NA" here is one this package put back.
+    sodium_corrected = if (isTRUE(repair_now) && "SUBST" %in% names(out)) {
+      sum(out$SUBST == "NA", na.rm = TRUE)
+    } else 0L
+  )
 }
 
 #' Read one published CSV file from disk
@@ -243,7 +263,20 @@ im_read_file <- function(path, repair = TRUE, quiet = TRUE) {
   # Recorded so im_read() can tell a corrected file from an uncorrected one
   # without reading it twice.
   attr(out, "icpim_blank_subst") <- n_blank
-  out
+  # A bare path says nothing about which release it came from, so those fields
+  # stay unknown here; im_read() fills them in.
+  set_provenance(
+    out,
+    subprog          = NA_character_,
+    file             = basename(path),
+    dataset_version  = NA_character_,
+    doi              = NA_character_,
+    downloaded       = tryCatch(file.mtime(path), error = function(e) NA),
+    read_at          = Sys.time(),
+    package_version  = as.character(utils::packageVersion("icpim")),
+    rows_read        = nrow(out),
+    sodium_corrected = if (isTRUE(repair)) n_blank else 0L
+  )
 }
 
 # TRUE/FALSE pass through; "auto" repairs only version 1, the sole release the

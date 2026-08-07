@@ -4,12 +4,17 @@
 \alias{im_decode}
 \title{Add readable names for the code columns}
 \usage{
-im_decode(x, quiet = TRUE)
+im_decode(x, quiet = TRUE, version = im_version())
 }
 \arguments{
 \item{x}{A data frame from \code{\link[=im_read]{im_read()}} or \code{\link[=im_read_file]{im_read_file()}}.}
 
 \item{quiet}{Logical. Suppress notes about codes that could not be matched.}
+
+\item{version}{Dataset version the code lists should come from. Defaults to
+\code{\link[=im_version]{im_version()}}. Lists published with a version this package was not built
+against are fetched and cached automatically, so a release that adds
+substances decodes without any change here.}
 }
 \value{
 \code{x} with added lowercase columns: \code{substance} or \code{parameter},

@@ -10,14 +10,21 @@
 #   3. Missing values are the literal string "NULL".
 #
 # Sodium's code is the string "NA", so nothing here may use a reader that
-# treats "NA" as missing. read.csv(na.strings = "") is used deliberately.
+# treats "NA" as missing. read_doc_csv() sets `na = character()` deliberately.
+#
+# Rerun this only when the *stable* metadata changes: a renamed file, a new
+# subprogramme, or a correction to the code lists that you want bundled.
+# Row counts, sizes and year ranges are no longer recorded here - they are
+# measured at run time by im_manifest() and im_coverage() - so an ordinary
+# annual release needs no change to this script.
 
 library(tibble)
+pkgload::load_all(quiet = TRUE)   # for read_doc_csv() and IM_BUNDLED_VERSION
 
 doc_url <- function(f) {
   sprintf(
-    "https://doris.snd.se/api/file/2024-180/1/documentation?filePath=%s",
-    utils::URLencode(f, reserved = TRUE)
+    "https://doris.snd.se/api/file/2024-180/%s/documentation?filePath=%s",
+    IM_BUNDLED_VERSION, utils::URLencode(f, reserved = TRUE)
   )
 }
 
@@ -29,24 +36,8 @@ read_doc <- function(f) {
   tmp <- tempfile(fileext = ".csv")
   on.exit(unlink(tmp), add = TRUE)
   utils::download.file(doc_url(f), tmp, quiet = TRUE, mode = "wb")
-
-  x <- vroom::vroom(
-    tmp,
-    delim = ",",
-    col_types = vroom::cols(.default = vroom::col_character()),
-    na = character(),         # NOT "NA": that is sodium
-    show_col_types = FALSE,
-    progress = FALSE
-  )
-  x <- as.data.frame(x, stringsAsFactors = FALSE)
-
-  # Trim the fixed-width padding from every character column.
-  x[] <- lapply(x, function(col) {
-    col <- trimws(col)
-    col[col == "NULL" | !nzchar(col)] <- NA_character_
-    col
-  })
-  x
+  # The package's own reader, so the build and the runtime cannot drift apart.
+  read_doc_csv(tmp)
 }
 
 # Substances --------------------------------------------------------------
@@ -126,31 +117,32 @@ im_flags <- tibble::tribble(
 )
 
 # Subprogrammes -----------------------------------------------------------
-# Row counts, site counts and year ranges are measured from version 1 of the
-# deposit, not asserted: see data-raw/profile_subprogrammes.R.
+# Only what does not change between releases. Sizes come from the repository
+# via im_manifest(); row counts, site counts and year ranges are measured by
+# im_coverage(). Nothing here needs editing when a new version is published.
 im_subprogrammes <- tibble::tribble(
-  ~subprog, ~name,                        ~file,                            ~collection, ~key,    ~size_mb, ~n_rows, ~n_sites, ~first_year, ~last_year,
-  "AC", "Air chemistry",                 "AC_air_chemistry.csv",            "CHEM", "SUBST",  2.0,   27002L, 38L, 1987L, 2019L,
-  "AL", "Aerial green algae",            "AL_aerial_green_algae.csv",       "BIO1", "PARAM",  0.6,    6461L, 10L, 1999L, 2019L,
-  "AM", "Meteorology",                   "AM_meteorology.csv",              "CHEM", "SUBST",  6.9,  105278L, 36L, 1967L, 2019L,
-  "BB", "Birds",                         "BB_birds.csv",                    "BIO2", "PARAM",  0.01,     71L,  2L, 2000L, 2010L,
-  "BI", "Tree bioelements",              "BI_tree_bioelements.csv",         "BIO2", "PARAM",  1.4,   13203L,  6L, 1991L, 2019L,
-  "EP", "Epiphytes",                     "EP_epiphytes.csv",                "BIO2", "PARAM",  0.1,    1166L, 11L, 1993L, 2019L,
-  "FC", "Foliage chemistry",             "FC_foliage_chemistry.csv",        "CHEM", "SUBST",  2.4,   23963L, 31L, 1986L, 2019L,
-  "FD", "Forest damage",                 "FD_forest_damage.csv",            "BIO1", "PARAM", 11.1,  130380L, 31L, 1998L, 2019L,
-  "GW", "Groundwater chemistry",         "GW_groundwater_chemistry.csv",    "CHEM", "SUBST",  4.6,   64513L, 13L, 1989L, 2020L,
-  "LC", "Lakewater chemistry",           "LC_lakewater_chemistry.csv",      "CHEM", "SUBST",  4.4,   68724L,  8L, 1991L, 2019L,
-  "LF", "Litterfall chemistry",          "LF_litterfall_chemistry.csv",     "CHEM", "SUBST",  2.6,   27995L, 21L, 1987L, 2019L,
-  "MB", "Microbial decomposition",       "MB_microbial_decomposition.csv",  "CHEM", "SUBST",  0.07,    779L,  9L, 1993L, 2019L,
-  "MC", "Metal chemistry in mosses",     "MC_metal_chemistry_mosses.csv",   "CHEM", "SUBST",  0.01,    125L,  4L, 2000L, 2016L,
-  "PC", "Precipitation chemistry",       "PC_precipitation_chemistry.csv",  "CHEM", "SUBST", 11.5,  162851L, 39L, 1977L, 2019L,
-  "RW", "Runoff water chemistry",        "RW_runoff_water_chemistry.csv",   "CHEM", "SUBST",  9.5,  150050L, 28L, 1987L, 2019L,
-  "SC", "Soil chemistry",                "SC_soil_chemistry.csv",           "CHEM", "SUBST",  0.6,    8617L, 18L, 1993L, 2018L,
-  "SF", "Stemflow",                      "SF_stemflow.csv",                 "CHEM", "SUBST",  3.1,   33720L, 19L, 1992L, 2019L,
-  "SW", "Soilwater chemistry",           "SW_soilwater_chemistry.csv",      "CHEM", "SUBST", 12.4,  178557L, 31L, 1986L, 2019L,
-  "TF", "Throughfall chemistry",         "TF_throughfall_chemistry.csv",    "CHEM", "SUBST", 11.8,  125837L, 33L, 1990L, 2019L,
-  "VG", "Vegetation",                    "VG_vegetation.csv",               "BIO1", "PARAM",  3.6,   41100L, 27L, 1990L, 2019L,
-  "VS", "Vegetation structure",          "VS_vegetation_structure.csv",     "BIO2", "PARAM",  2.1,   22939L, 20L, 1991L, 2019L
+  ~subprog, ~name,                        ~file,                            ~collection, ~key,
+  "AC", "Air chemistry",                 "AC_air_chemistry.csv",            "CHEM", "SUBST",
+  "AL", "Aerial green algae",            "AL_aerial_green_algae.csv",       "BIO1", "PARAM",
+  "AM", "Meteorology",                   "AM_meteorology.csv",              "CHEM", "SUBST",
+  "BB", "Birds",                         "BB_birds.csv",                    "BIO2", "PARAM",
+  "BI", "Tree bioelements",              "BI_tree_bioelements.csv",         "BIO2", "PARAM",
+  "EP", "Epiphytes",                     "EP_epiphytes.csv",                "BIO2", "PARAM",
+  "FC", "Foliage chemistry",             "FC_foliage_chemistry.csv",        "CHEM", "SUBST",
+  "FD", "Forest damage",                 "FD_forest_damage.csv",            "BIO1", "PARAM",
+  "GW", "Groundwater chemistry",         "GW_groundwater_chemistry.csv",    "CHEM", "SUBST",
+  "LC", "Lakewater chemistry",           "LC_lakewater_chemistry.csv",      "CHEM", "SUBST",
+  "LF", "Litterfall chemistry",          "LF_litterfall_chemistry.csv",     "CHEM", "SUBST",
+  "MB", "Microbial decomposition",       "MB_microbial_decomposition.csv",  "CHEM", "SUBST",
+  "MC", "Metal chemistry in mosses",     "MC_metal_chemistry_mosses.csv",   "CHEM", "SUBST",
+  "PC", "Precipitation chemistry",       "PC_precipitation_chemistry.csv",  "CHEM", "SUBST",
+  "RW", "Runoff water chemistry",        "RW_runoff_water_chemistry.csv",   "CHEM", "SUBST",
+  "SC", "Soil chemistry",                "SC_soil_chemistry.csv",           "CHEM", "SUBST",
+  "SF", "Stemflow",                      "SF_stemflow.csv",                 "CHEM", "SUBST",
+  "SW", "Soilwater chemistry",           "SW_soilwater_chemistry.csv",      "CHEM", "SUBST",
+  "TF", "Throughfall chemistry",         "TF_throughfall_chemistry.csv",    "CHEM", "SUBST",
+  "VG", "Vegetation",                    "VG_vegetation.csv",               "BIO1", "PARAM",
+  "VS", "Vegetation structure",          "VS_vegetation_structure.csv",     "BIO2", "PARAM"
 )
 
 usethis::use_data(

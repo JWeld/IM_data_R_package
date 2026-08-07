@@ -1,0 +1,88 @@
+# Offline behaviour -------------------------------------------------------
+# The package must stay usable without a network, falling back to what it
+# ships with rather than failing.
+
+test_that("the bundled catalogue holds only version-stable columns", {
+  expect_setequal(
+    names(im_subprogrammes),
+    c("subprog", "name", "file", "collection", "key")
+  )
+  # Anything that changes between releases must not be recorded here.
+  expect_false(any(c("n_rows", "n_sites", "size_mb", "first_year", "last_year")
+                   %in% names(im_subprogrammes)))
+})
+
+test_that("the pinned version is the one the bundled tables came from", {
+  # If these diverge, the bundled lookups silently describe a different
+  # release from the one being read.
+  expect_equal(im_version(), IM_BUNDLED_VERSION)
+})
+
+test_that("subprogrammes resolve from the bundled catalogue without network", {
+  expect_equal(nrow(known_subprogs("1")), 21L)
+  expect_equal(subprog_file("PC", "1"), "PC_precipitation_chemistry.csv")
+  expect_equal(subprog_file("MC", "1"), "MC_metal_chemistry_mosses.csv")
+})
+
+test_that("code lists come from the bundle for the version it was built from", {
+  expect_identical(codes_for("substances", IM_BUNDLED_VERSION), im_substances)
+  expect_identical(codes_for("parameters", IM_BUNDLED_VERSION), im_parameters)
+  expect_identical(codes_for("sites", IM_BUNDLED_VERSION), im_sites)
+})
+
+test_that("an unreachable repository falls back rather than failing", {
+  # Point the API at a host that cannot answer.
+  withr::local_options(icpim.version = "99")
+  local_mocked_bindings(im_api_dataset = function(version = NULL) NULL)
+  expect_warning(man <- im_manifest("99"), "bundled catalogue")
+  expect_equal(nrow(man), 21L)
+  # And subprogramme resolution still works.
+  expect_equal(nrow(known_subprogs("99")), 21L)
+})
+
+test_that("a version with no cached code lists falls back to the bundled ones", {
+  withr::local_options(icpim.cache_dir = withr::local_tempdir())
+  local_mocked_bindings(im_update_codes = function(...) invisible(NULL))
+  expect_identical(codes_for("substances", "99"), im_substances)
+})
+
+test_that("resolve_subprog reports the codes valid for the release asked for", {
+  expect_error(resolve_subprog("ZZ", version = "1"), "Unknown subprogramme")
+  expect_equal(resolve_subprog("pc", version = "1"), "PC")
+})
+
+# Live repository ---------------------------------------------------------
+
+test_that("the repository reports a version and a file list", {
+  skip_on_cran()
+  skip_if_offline()
+
+  latest <- im_latest_version()
+  expect_type(latest, "character")
+  expect_false(is.na(latest))
+  expect_true(as.numeric(latest) >= 1)
+
+  man <- im_manifest("1", "data")
+  expect_gte(nrow(man), 21L)
+  expect_true(all(c("subprog", "file", "size_mb") %in% names(man)))
+  expect_true(all(im_subprogrammes$subprog %in% man$subprog))
+  # Sizes are real, so a stale figure cannot be reported.
+  expect_true(all(man$size_mb > 0))
+})
+
+test_that("a version that does not exist is reported as absent, not as an error", {
+  skip_on_cran()
+  skip_if_offline()
+  # The API answers 200 with a null body for these, so status alone would lie.
+  expect_false(im_version_exists("99"))
+  expect_true(im_version_exists("1"))
+})
+
+test_that("im_check_version compares the pinned version with the newest", {
+  skip_on_cran()
+  skip_if_offline()
+  chk <- im_check_version(quiet = TRUE)
+  expect_named(chk, c("current", "latest", "newer_available"))
+  expect_equal(chk$current, im_version())
+  expect_type(chk$newer_available, "logical")
+})
