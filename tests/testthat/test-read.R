@@ -17,6 +17,71 @@ test_that("the sodium substance code survives reading", {
   expect_false(anyNA(pc$SUBST))
 })
 
+# A version-2-style file: sodium already carries its code. Built from the real
+# extract so it differs from it in exactly the one respect under test.
+v2_file <- function() {
+  src <- readLines(im_example("sample_PC.csv"), encoding = "UTF-8")
+  hdr <- strsplit(src[1], ",", fixed = TRUE)[[1]]
+  i <- which(hdr == "SUBST")
+  body <- vapply(src[-1], function(ln) {
+    f <- strsplit(ln, ",", fixed = TRUE)[[1]]
+    # strsplit drops trailing empty fields; restore the full width or the
+    # rewritten line is narrower than the header.
+    length(f) <- length(hdr)
+    f[is.na(f)] <- ""
+    if (!nzchar(f[i])) f[i] <- "NA"
+    paste(f, collapse = ",")
+  }, character(1), USE.NAMES = FALSE)
+  path <- withr::local_tempfile(fileext = ".csv", .local_envir = parent.frame())
+  writeLines(c(src[1], body), path, useBytes = TRUE)
+  path
+}
+
+test_that("a correctly coded file passes through untouched", {
+  path <- v2_file()
+  # Reading it needs no repair at all.
+  none <- im_read_file(path, repair = FALSE)
+  expect_equal(sum(none$SUBST == "NA", na.rm = TRUE), 60)
+  expect_false(anyNA(none$SUBST))
+  expect_equal(attr(none, "icpim_blank_subst"), 0L)
+
+  # And repairing is a no-op rather than a corruption.
+  repaired <- im_read_file(path, repair = TRUE)
+  expect_equal(repaired$SUBST, none$SUBST)
+  expect_equal(nrow(repaired), nrow(none))
+})
+
+test_that("a corrected file gives the same result as a repaired v1 file", {
+  v1 <- im_read_file(im_example("sample_PC.csv"), repair = TRUE)
+  v2 <- im_read_file(v2_file(), repair = FALSE)
+  expect_equal(v1$SUBST, v2$SUBST)
+  expect_equal(v1$VALUE, v2$VALUE)
+})
+
+test_that("repair = 'auto' follows the dataset version", {
+  expect_true(resolve_repair("auto", "1"))    # the affected release
+  expect_false(resolve_repair("auto", "2"))   # corrected from here on
+  expect_false(resolve_repair("auto", "3"))
+  expect_true(resolve_repair(TRUE, "2"))      # explicit wins
+  expect_false(resolve_repair(FALSE, "1"))
+  expect_error(resolve_repair("yes", "1"), "must be TRUE, FALSE")
+})
+
+test_that("blank codes in an unaffected version are reported, not assumed", {
+  withr::local_options(icpim.cache_dir = withr::local_tempdir(), icpim.version = "2")
+  dir.create(file.path(im_cache_dir(), ""), recursive = TRUE, showWarnings = FALSE)
+  # Plant a v1-style file (blank sodium) where version 2 would be looked for.
+  file.copy(im_example("sample_PC.csv"),
+            file.path(im_cache_dir(create = TRUE),
+                      "PC_precipitation_chemistry.csv"))
+  expect_warning(
+    out <- im_read("PC", quiet = TRUE),
+    "blank substance code"
+  )
+  # Left missing rather than silently called sodium.
+  expect_equal(sum(is.na(out$SUBST)), 60)
+})
+
 test_that("repair = FALSE returns the file as published", {
   pc <- im_read_file(im_example("sample_PC.csv"), repair = FALSE)
   expect_equal(sum(is.na(pc$SUBST)), 60)

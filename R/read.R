@@ -27,12 +27,12 @@ IM_NUMERIC_COLS <- c(
 #'
 #' * **Types every column explicitly.** `SCODE` keeps its leading zeros;
 #'   `VALUE` is numeric; nothing is guessed.
-#' * **Restores the sodium code.** In the published files the substance code
-#'   for sodium is blank in 48,441 rows across twelve subprogrammes. The
-#'   underlying code is the literal string `"NA"`, which was consumed as a
-#'   missing value somewhere upstream of publication. With `repair = TRUE`
-#'   (the default) those rows are given `SUBST == "NA"` back. See
-#'   `vignette("icpim")` for the evidence.
+#' * **Corrects the sodium code on read.** A known issue affecting **version 1
+#'   only**: the substance code for sodium is blank in 48,441 rows across
+#'   twelve subprogrammes, the literal string `"NA"` having been consumed as a
+#'   missing value before publication. It is corrected in version 2 onwards.
+#'   By default this is put right on read for version 1 and left alone
+#'   afterwards; see the `repair` argument.
 #' * **Decodes the code lists.** `SUBST`/`PARAM`, `DETER` and `PRETRE` gain
 #'   readable companion columns (`substance`, `determination`, `pretreatment`).
 #' * **Parses dates.** `YYYYMM` becomes `date`, `year` and `month`. Annual
@@ -71,8 +71,14 @@ IM_NUMERIC_COLS <- c(
 #'   codes (`"X"`, `"S"`) or the decoded names in `stat` (`"mean"`, `"sum"`,
 #'   `"maximum"`). `"primary"` keeps only unflagged primary values.
 #' @param decode Logical. Join the code lists to add readable name columns?
-#' @param repair Logical. Restore the sodium substance code? See details.
-#'   Turning this off gives you the file exactly as published.
+#' @param repair Correct the blank sodium substance code. `"auto"`, the
+#'   default, applies the correction to version 1 and leaves every later
+#'   version untouched, since the issue is fixed from version 2 onwards. A
+#'   correctly coded file needs no repair and is passed through unchanged
+#'   whatever this is set to. `TRUE` forces the correction, `FALSE` returns
+#'   the file exactly as published. Under `"auto"`, blank codes found in a
+#'   version that should not have them are reported rather than assumed to be
+#'   sodium.
 #' @param quiet Logical. Suppress progress and one-time notes.
 #' @param version Dataset version. Defaults to [im_version()].
 #'
@@ -102,14 +108,31 @@ im_read <- function(subprog,
                     substances = NULL,
                     stat = NULL,
                     decode = TRUE,
-                    repair = TRUE,
+                    repair = "auto",
                     quiet = NULL,
                     version = im_version()) {
   quiet <- quiet %||% getOption("icpim.quiet", FALSE)
   code  <- resolve_subprog(subprog)
   path  <- im_local_path(code, version = version, quiet = quiet)
 
-  out <- im_read_file(path, repair = repair, quiet = quiet)
+  repair_now <- resolve_repair(repair, version)
+  out <- im_read_file(path, repair = repair_now, quiet = quiet)
+
+  # If a release this package does not expect to be affected turns out to have
+  # blank substance codes, say so rather than silently dropping them: it means
+  # either the correction did not land, or these are genuinely missing codes
+  # that must not be assumed to be sodium.
+  n_blank <- attr(out, "icpim_blank_subst") %||% 0L
+  if (identical(repair, "auto") && !repair_now && n_blank > 0) {
+    cli::cli_warn(c(
+      "{n_blank} row{?s} in {.field {code}} have a blank substance code, which
+       version {version} was not expected to contain.",
+      "i" = "In version 1 these were sodium. Do not assume that here.",
+      "i" = "Use {.code repair = TRUE} to code them as sodium anyway, or
+             {.code repair = FALSE} to keep them missing and silence this."
+    ))
+  }
+  attr(out, "icpim_blank_subst") <- NULL
 
   # Filters, applied before decoding so the joins are as small as possible.
   if (!is.null(sites)) {
@@ -157,11 +180,16 @@ im_read <- function(subprog,
 #' want readable names.
 #'
 #' @param path Path to a published ICP IM CSV file.
-#' @param repair Logical. Restore the blank sodium substance code? See
-#'   [im_read()].
-#' @param quiet Logical. Suppress the note about repaired rows.
+#' @param repair Logical. Correct the blank sodium substance code, a known
+#'   issue in version 1 of the deposit? Files from version 2 onwards have the
+#'   code already and pass through unchanged either way. The version-aware
+#'   `"auto"` setting belongs to [im_read()], which knows which release it is
+#'   reading; here the choice is explicit.
+#' @param quiet Logical. Suppress the note about corrected rows.
 #'
-#' @return A tibble, with `date`, `year` and `month` added.
+#' @return A tibble, with `date`, `year` and `month` added. Carries an
+#'   `icpim_blank_subst` attribute recording how many rows had a blank
+#'   substance code before any correction.
 #' @export
 #' @examples
 #' pc <- im_read_file(im_example("sample_PC.csv"))
@@ -179,16 +207,20 @@ im_read_file <- function(path, repair = TRUE, quiet = TRUE) {
 
   # Restore sodium before empty strings are turned into NA, which is the step
   # that would otherwise make the repair impossible.
-  if (isTRUE(repair) && "SUBST" %in% names(raw)) {
+  #
+  # Where the code is already correct - version 2 onwards - there are no blanks
+  # and this is a no-op, so a correctly coded file passes through untouched.
+  n_blank <- 0L
+  if ("SUBST" %in% names(raw)) {
     blank <- !is.na(raw$SUBST) & !nzchar(trimws(raw$SUBST))
-    n <- sum(blank)
-    if (n > 0) {
+    n_blank <- sum(blank)
+    if (isTRUE(repair) && n_blank > 0) {
       raw$SUBST[blank] <- "NA"
       if (!quiet && !the$warned_sodium) {
         the$warned_sodium <- TRUE
         cli::cli_alert_info(c(
-          "Restored the sodium substance code in {n} row{?s} ",
-          "(published blank; the code is the string {.val NA}). ",
+          "Restored the sodium substance code in {n_blank} row{?s} ",
+          "(blank in version 1; the code is the string {.val NA}). ",
           "Use {.code repair = FALSE} for the file exactly as published."
         ))
       }
@@ -207,7 +239,19 @@ im_read_file <- function(path, repair = TRUE, quiet = TRUE) {
     raw[[nm]] <- suppressWarnings(as.numeric(raw[[nm]]))
   }
 
-  im_add_dates(raw)
+  out <- im_add_dates(raw)
+  # Recorded so im_read() can tell a corrected file from an uncorrected one
+  # without reading it twice.
+  attr(out, "icpim_blank_subst") <- n_blank
+  out
+}
+
+# TRUE/FALSE pass through; "auto" repairs only version 1, the sole release the
+# blank sodium code affects.
+resolve_repair <- function(repair, version) {
+  if (isTRUE(repair) || isFALSE(repair)) return(repair)
+  if (identical(repair, "auto")) return(identical(as.character(version), "1"))
+  cli::cli_abort('{.arg repair} must be TRUE, FALSE or "auto".')
 }
 
 # YYYYMM -> date/year/month. Month 00 marks an annual value (9,630 rows).

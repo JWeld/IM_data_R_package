@@ -9,13 +9,18 @@ im_read_file(path, repair = TRUE, quiet = TRUE)
 \arguments{
 \item{path}{Path to a published ICP IM CSV file.}
 
-\item{repair}{Logical. Restore the blank sodium substance code? See
-\code{\link[=im_read]{im_read()}}.}
+\item{repair}{Logical. Correct the blank sodium substance code, a known
+issue in version 1 of the deposit? Files from version 2 onwards have the
+code already and pass through unchanged either way. The version-aware
+\code{"auto"} setting belongs to \code{\link[=im_read]{im_read()}}, which knows which release it is
+reading; here the choice is explicit.}
 
-\item{quiet}{Logical. Suppress the note about repaired rows.}
+\item{quiet}{Logical. Suppress the note about corrected rows.}
 }
 \value{
-A tibble, with \code{date}, \code{year} and \code{month} added.
+A tibble, with \code{date}, \code{year} and \code{month} added. Carries an
+\code{icpim_blank_subst} attribute recording how many rows had a blank
+substance code before any correction.
 }
 \description{
 The reading and typing half of \code{\link[=im_read]{im_read()}}, without the download, cache or

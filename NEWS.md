@@ -14,10 +14,16 @@ First release.
 
 ## Handling of the published files
 
-* **Sodium's substance code is restored.** The ICP IM code for sodium is the
-  literal string `"NA"`, and it arrives blank in 48,441 rows across twelve
-  subprogrammes of version 1. `im_read(repair = TRUE)`, the default, puts it
-  back; `repair = FALSE` returns the file exactly as published.
+* **Sodium's substance code is corrected on read.** The ICP IM code for sodium
+  is the literal string `"NA"`, and a known issue affecting **version 1 of the
+  dataset only** leaves it blank in 48,441 rows across twelve subprogrammes.
+  It is corrected in the data itself from version 2 onwards.
+  `im_read(repair = "auto")`, the default, applies the correction to version 1
+  and leaves later versions untouched, so scripts survive the change; `TRUE`
+  forces it and `FALSE` returns the file exactly as published. A file that
+  already carries the code is passed through unchanged whatever the setting,
+  and blank codes appearing in a version that should not have them are
+  reported rather than assumed to be sodium.
 * Every column is typed explicitly rather than guessed, so `SCODE` keeps its
   leading zeros.
 * `YYYYMM` is parsed to `date`, `year` and `month`. Annual values published
@@ -31,8 +37,18 @@ First release.
 
 * `im_decode()` adds `substance`/`parameter`, `determination`, `pretreatment`,
   `stat` and `quality`. `im_codes()` searches the code lists.
+* Decoding honours `LISTSUB`/`PARLIST`, which say whether a code belongs to the
+  substance list (`"DB"`) or the IM parameter list (`"IM"`). Around 26,000 rows
+  across seven subprogrammes use `IM` codes - `AOT40`, `SOL_G`, `CEC_E`,
+  `C/N`, `BDEN` - that are absent from the substance list entirely. It also
+  disambiguates the 77 codes present in both: `ABS` is *Absorbance* in one and
+  *Number of branches on the current tree where algae are missing* in the
+  other, and both occur in `AL`.
 * `im_widen()` pivots to one column per determinand, keeping `FLAGSTA` in the
-  key and erroring rather than collapsing duplicates silently.
+  key and erroring rather than collapsing duplicates silently. The error names
+  the columns that vary within the colliding keys - usually `DETER`, the same
+  sample analysed by two methods - and reports what fraction of rows is
+  affected.
 * `im_units()` reports determinands published in more than one unit.
 * `im_detection_limit()` makes the treatment of below-detection values
   explicit.

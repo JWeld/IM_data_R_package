@@ -9,6 +9,28 @@ test_that("widening refuses to collapse mixed statistics silently", {
   expect_no_error(im_widen(am))
 })
 
+test_that("the duplicate-key error names the columns responsible", {
+  pc <- im_read_file(im_example("sample_PC.csv")) |> im_decode()
+  # Force a collision by keying on too little.
+  err <- tryCatch(
+    im_widen(pc, id_cols = c("AREA", "year")),
+    error = function(e) conditionMessage(e)
+  )
+  expect_match(err, "duplicate key")
+  expect_match(err, "% of rows")
+  # It should point at what actually varies, not at the decoded companions.
+  expect_match(err, "YYYYMM|month|date")
+  expect_no_match(err, "\\bsubstance\\b")
+})
+
+test_that("values_fn is the documented way through a real collision", {
+  pc <- im_read_file(im_example("sample_PC.csv")) |> im_decode()
+  expect_error(im_widen(pc, id_cols = c("AREA", "year")), "duplicate key")
+  expect_no_error(
+    im_widen(pc, id_cols = c("AREA", "year"), values_fn = mean)
+  )
+})
+
 test_that("widening works once a single statistic is selected", {
   am <- im_read_file(im_example("sample_AM.csv")) |> im_decode()
   mean_only <- filter_stat(am, "mean")

@@ -10,6 +10,20 @@
 #' matches almost nothing. The bundled lookups are trimmed, which is why this
 #' works.
 #'
+#' # Two code lists, not one
+#'
+#' The determinand column draws on two published lists, and a companion column
+#' says which: `LISTSUB` for `SUBST`, `PARLIST` for `PARAM`. `"DB"` means the
+#' substance list ([im_substances]) and `"IM"` means the parameter list
+#' ([im_parameters]). Roughly 26,000 rows across seven subprogrammes use `IM`
+#' codes - `AOT40`, `SOL_G`, `CEC_E`, `C/N`, `BDEN` - and looking those up in
+#' the substance list alone returns nothing.
+#'
+#' It also matters where the lists overlap. 77 codes appear in both, and `ABS`
+#' means *Absorbance* in one and *Number of branches on the current tree where
+#' algae are missing* in the other. Both readings occur in `AL`, in the same
+#' file, told apart only by `PARLIST`.
+#'
 #' @param x A data frame from [im_read()] or [im_read_file()].
 #' @param quiet Logical. Suppress notes about codes that could not be matched.
 #'
@@ -28,15 +42,11 @@ im_decode <- function(x, quiet = TRUE) {
   stopifnot(is.data.frame(x))
 
   if ("SUBST" %in% names(x)) {
-    x$substance <- lookup(x$SUBST, im_substances$code, im_substances$name)
+    x$substance <- decode_codes(x$SUBST, x[["LISTSUB"]])
     if (!quiet) report_unmatched(x$SUBST, x$substance, "substance")
   }
   if ("PARAM" %in% names(x)) {
-    # Parameter names are defined per subprogramme; collapse to unique
-    # code -> name pairs, which is unambiguous in the published list.
-    p <- unique(im_parameters[, c("code", "name")])
-    p <- p[!duplicated(p$code), ]
-    x$parameter <- lookup(x$PARAM, p$code, p$name)
+    x$parameter <- decode_codes(x$PARAM, x[["PARLIST"]])
     if (!quiet) report_unmatched(x$PARAM, x$parameter, "parameter")
   }
   if ("DETER" %in% names(x)) {
@@ -59,6 +69,42 @@ im_decode <- function(x, quiet = TRUE) {
 
 lookup <- function(codes, from, to) {
   to[match(codes, from)]
+}
+
+# The determinand column holds codes from two different published lists, and
+# the companion column (LISTSUB for SUBST, PARLIST for PARAM) says which:
+#
+#   "DB" -> substance_codes.csv          (im_substances)
+#   "IM" -> parameters_..._subprogramme  (im_parameters)
+#
+# This matters rather than being pedantry: 77 codes appear in both lists, and
+# `ABS` means "Absorbance" in one and "Number of branches on the current tree
+# where algae are missing" in the other. Both occur in AL, in the same file,
+# distinguished only by PARLIST.
+#
+# No code carries two different meanings *within* the parameter list, so the
+# parameter lookup can be flattened across subprogrammes.
+decode_codes <- function(codes, lists = NULL) {
+  subst <- im_substances[!duplicated(im_substances$code), ]
+  par   <- unique(im_parameters[, c("code", "name")])
+  par   <- par[!duplicated(par$code), ]
+
+  from_subst <- lookup(codes, subst$code, subst$name)
+  from_par   <- lookup(codes, par$code, par$name)
+
+  if (is.null(lists)) {
+    # No discriminator: prefer the substance list, fall back to parameters.
+    return(ifelse(is.na(from_subst), from_par, from_subst))
+  }
+
+  out <- ifelse(
+    !is.na(lists) & lists == "IM",
+    from_par,     # IM list
+    from_subst    # DB list, or unstated
+  )
+  # A handful of rows name a list that does not hold the code (94 in AC);
+  # falling back beats returning NA.
+  ifelse(is.na(out), ifelse(is.na(from_subst), from_par, from_subst), out)
 }
 
 report_unmatched <- function(codes, decoded, what) {

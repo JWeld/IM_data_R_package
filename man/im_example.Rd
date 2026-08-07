@@ -21,13 +21,13 @@ demonstrating:
 }
 \details{
 \itemize{
-\item \code{sample_PC.csv} — precipitation chemistry, site SE14, 2015–2019. Contains
-60 rows whose substance code is blank because it is sodium, and a station
-code of \code{"0176"} that must keep its leading zero.
-\item \code{sample_AM.csv} — meteorology, site AT01, 2002. Air and soil temperature
+\item \code{sample_PC.csv} - precipitation chemistry, site SE14, 2015-2019. Contains
+60 rows carrying the version 1 sodium issue, where the substance code is
+blank, and a station code of \code{"0176"} that must keep its leading zero.
+\item \code{sample_AM.csv} - meteorology, site AT01, 2002. Air and soil temperature
 and precipitation, carrying all of \code{X}, \code{A}, \code{Z}, \code{XA}, \code{XZ}, \code{S} and \code{SZ},
 so the same key appears five times over.
-\item \code{sample_BB.csv} — the complete bird subprogramme, 71 rows, every one of
+\item \code{sample_BB.csv} - the complete bird subprogramme, 71 rows, every one of
 them an annual value published with month \code{00}.
 }
 }

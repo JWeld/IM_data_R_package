@@ -13,7 +13,7 @@ library(icpim)
 ```
 
 The ICP Integrated Monitoring programme has measured whole forested catchments
-since the late 1980s — deposition, soil, soil water, groundwater, runoff,
+since the late 1980s - deposition, soil, soil water, groundwater, runoff,
 vegetation and biota at the same plots, year after year. The open dataset
 ([doi:10.5878/z376-2m63](https://doi.org/10.5878/z376-2m63)) publishes that
 record as 21 CSV files, one per subprogramme, covering 55 sites in 14 countries
@@ -45,7 +45,7 @@ pc <- im_read("PC", countries = "SE", years = 2000:2019)
 ```
 
 Filters for `sites`, `countries`, `years` and `substances` are applied while
-reading, which is worth using — the larger files run to 180,000 rows.
+reading, which is worth using - the larger files run to 180,000 rows.
 
 The examples below use the small extracts bundled with the package, so they
 run offline:
@@ -79,24 +79,25 @@ Sodium has silently become a missing value, which then deletes every sodium
 record and quietly breaks any `SUBST ==` comparison. The fix is
 `na.strings = ""`, and `icpim` does this for you.
 
-In the published files this has already happened once, upstream of
-publication: sodium's code arrives blank in 48,441 rows across twelve
-subprogrammes. `im_read()` restores it by default.
+The same thing happened once before publication, and is a **known issue
+affecting version 1 of the dataset only**: sodium's code arrives blank in
+48,441 rows across twelve subprogrammes. It is corrected from version 2
+onwards. `icpim` corrects it on read.
 
 ```{r}
 sum(pc$SUBST == "NA")
 unique(pc$substance[pc$SUBST == "NA"])
 ```
 
-Pass `repair = FALSE` to get the file exactly as published.
+The `repair` argument controls this. Its default, `"auto"`, applies the
+correction to version 1 and leaves later versions alone, so a script written
+today keeps working unchanged when you move to version 2. `repair = FALSE`
+gives you the file exactly as published; `repair = TRUE` forces the
+correction.
 
-The evidence that these rows really are sodium: their count tracks chloride
-and magnesium to within about 1% in every water-chemistry file; their units
-are right for sodium in each medium (mg/l in waters, mg/kg in tissue, meq/kg
-exchangeable in soil); and pairing them with chloride at the same site and
-month gives a mass ratio of 1.83 in throughfall against seawater's 1.80.
-Runoff gives 0.86, which is the expected signature of silicate weathering
-adding sodium without chloride.
+A file that already carries the code needs no correction and is passed through
+untouched whatever you set, so reading corrected and uncorrected releases
+gives the same answer.
 
 ### Station codes are zero-padded
 
@@ -145,6 +146,28 @@ rather than collapse duplicates silently:
 ```{r, error = TRUE}
 im_widen(am, id_cols = c("AREA", "SCODE", "LEVEL", "YYYYMM"))
 ```
+
+### Codes come from two lists, not one
+
+`SUBST` and `PARAM` draw on two separate published code lists, and a companion
+column says which: `LISTSUB` for `SUBST`, `PARLIST` for `PARAM`. `"DB"` means
+the substance list, `"IM"` means the IM parameter list.
+
+About 26,000 rows across seven subprogrammes use `IM` codes - `AOT40`,
+`SOL_G`, `CEC_E`, `C/N`, `BDEN` - and none of them appear in the substance
+list at all. Looking those up in `substance_codes.csv` alone silently returns
+nothing.
+
+The overlap matters too. 77 codes are in both lists, and one means different
+things in each:
+
+```{r}
+im_codes("substance", "^ABS$")$name
+subset(im_parameters, code == "ABS", select = c(subprog, name))$name
+```
+
+Both readings occur in `AL`, in the same file, told apart only by `PARLIST`.
+`im_decode()` honours the discriminator, so you get the right name either way.
 
 ## Going wide
 

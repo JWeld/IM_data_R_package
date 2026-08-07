@@ -56,18 +56,21 @@ read.csv(text = "SUBST,VALUE\nNA,2.4\nCL,4.4")$SUBST
 #> [1] NA   "CL"
 ```
 
-In the published deposit this has already happened once upstream: sodium's
-code arrives blank in 48,441 rows across twelve subprogrammes. `im_read()`
-restores it by default (`repair = FALSE` gives the file as published).
+The same thing happened once before publication, and is a known issue
+affecting **version 1 of the dataset only**: sodium's code arrives blank in
+48,441 rows across twelve subprogrammes. It is corrected from version 2
+onwards, and `icpim` corrects it on read. The default `repair = "auto"`
+applies the correction to version 1 and leaves later versions untouched, so
+scripts keep working across the change.
 
 **Station codes are zero-padded.** `SCODE` is `"0176"`, not `176`. Read as a
 number it stops joining. And `SCODE` distinguishes *collectors*, not
-replicates — a site can have several gauges covering different periods, so
+replicates - a site can have several gauges covering different periods, so
 summing a flux over all of them double-counts the overlap.
 
 **`FLAGSTA` is part of the key, not an annotation.** In meteorology the same
-site, level, month and parameter carries up to five rows — mean, minimum,
-maximum, and the averaged daily extremes — distinguished only by that flag.
+site, level, month and parameter carries up to five rows - mean, minimum,
+maximum, and the averaged daily extremes - distinguished only by that flag.
 47% of temperature keys have more than one. Averaging without filtering biases
 mean air temperature by +0.42 °C, and for precipitation it mixes monthly sums
 with maximum *daily* sums.

@@ -5,13 +5,13 @@
 #' without a network connection, and because each one carries a trap worth
 #' demonstrating:
 #'
-#' * `sample_PC.csv` — precipitation chemistry, site SE14, 2015–2019. Contains
-#'   60 rows whose substance code is blank because it is sodium, and a station
-#'   code of `"0176"` that must keep its leading zero.
-#' * `sample_AM.csv` — meteorology, site AT01, 2002. Air and soil temperature
+#' * `sample_PC.csv` - precipitation chemistry, site SE14, 2015-2019. Contains
+#'   60 rows carrying the version 1 sodium issue, where the substance code is
+#'   blank, and a station code of `"0176"` that must keep its leading zero.
+#' * `sample_AM.csv` - meteorology, site AT01, 2002. Air and soil temperature
 #'   and precipitation, carrying all of `X`, `A`, `Z`, `XA`, `XZ`, `S` and `SZ`,
 #'   so the same key appears five times over.
-#' * `sample_BB.csv` — the complete bird subprogramme, 71 rows, every one of
+#' * `sample_BB.csv` - the complete bird subprogramme, 71 rows, every one of
 #'   them an annual value published with month `00`.
 #'
 #' @param file Name of the example file. If `NULL`, the available names are

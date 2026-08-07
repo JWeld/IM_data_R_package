@@ -106,8 +106,8 @@
 #' The `FLAGQUA` and `FLAGSTA` vocabularies.
 #'
 #' The deposit's `README.txt` lists five `FLAGSTA` codes. The AM (meteorology)
-#' section of the ICP IM Manual defines five more — `A`, `Z`, `XA`, `XZ` and
-#' `SZ` — and these do occur, in 36,522 rows of version 1. All ten are
+#' section of the ICP IM Manual defines five more - `A`, `Z`, `XA`, `XZ` and
+#' `SZ` - and these do occur, in 36,522 rows of version 1. All ten are
 #' recorded here.
 #'
 #' `FLAGSTA` is part of the observation key rather than an annotation: the

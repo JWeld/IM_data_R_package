@@ -28,6 +28,20 @@ Codes in the published lookup files are space-padded to a fixed width
 matches almost nothing. The bundled lookups are trimmed, which is why this
 works.
 }
+\section{Two code lists, not one}{
+The determinand column draws on two published lists, and a companion column
+says which: \code{LISTSUB} for \code{SUBST}, \code{PARLIST} for \code{PARAM}. \code{"DB"} means the
+substance list (\link{im_substances}) and \code{"IM"} means the parameter list
+(\link{im_parameters}). Roughly 26,000 rows across seven subprogrammes use \code{IM}
+codes - \code{AOT40}, \code{SOL_G}, \code{CEC_E}, \code{C/N}, \code{BDEN} - and looking those up in
+the substance list alone returns nothing.
+
+It also matters where the lists overlap. 77 codes appear in both, and \code{ABS}
+means \emph{Absorbance} in one and \emph{Number of branches on the current tree where
+algae are missing} in the other. Both readings occur in \code{AL}, in the same
+file, told apart only by \code{PARLIST}.
+}
+
 \examples{
 \donttest{
 if (curl::has_internet()) {

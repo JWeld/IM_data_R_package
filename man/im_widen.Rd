@@ -34,7 +34,7 @@ The published data are long: one row per measured value. Most analyses want
 one row per sample and one column per determinand. This pivots safely.
 }
 \details{
-The identifying columns default to everything that distinguishes a sample —
+The identifying columns default to everything that distinguishes a sample -
 including \code{FLAGSTA}, which matters: in \code{AM} the same site, level and month
 carries a mean, a minimum and a maximum as separate rows, and dropping the
 flag from the key silently collapses them. If a key still has duplicates,

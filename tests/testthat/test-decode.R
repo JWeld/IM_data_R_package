@@ -37,6 +37,33 @@ test_that("all ten FLAGSTA codes are documented, not just the README's five", {
   expect_true(all(c("A", "Z", "XA", "XZ", "SZ") %in% fs)) # Manual, AM section
 })
 
+test_that("the list column decides which code list is used", {
+  # ABS is in both published lists with different meanings.
+  expect_equal(decode_codes("ABS", "DB"), "Absorbance")
+  expect_match(decode_codes("ABS", "IM"), "algae are missing")
+
+  # IM-list codes are absent from the substance list entirely.
+  expect_equal(decode_codes("AOT40", "IM"),
+               "Accumulated exposure Over a Treshold of 40 ppb")
+  expect_false(is.na(decode_codes("CEC_E", "IM")))
+
+  # Sodium is a DB code and must still resolve.
+  expect_equal(decode_codes("NA", "DB"), "Sodium")
+})
+
+test_that("decoding falls back when the named list lacks the code", {
+  # AC has 94 rows flagged DB whose code only exists in the parameter list.
+  expect_false(is.na(decode_codes("AOT40", "DB")))
+  # and with no discriminator at all
+  expect_equal(decode_codes("NA", NULL), "Sodium")
+  expect_false(is.na(decode_codes("AOT40", NULL)))
+})
+
+test_that("no parameter code means two things across subprogrammes", {
+  p <- unique(im_parameters[, c("code", "name")])
+  expect_equal(sum(duplicated(p$code)), 0L)
+})
+
 test_that("im_codes searches both code and name", {
   expect_equal(im_codes("substance", "^sodium$")$code, "NA")
   expect_true(nrow(im_codes("flag")) == 13)

@@ -24,8 +24,8 @@ The \code{FLAGQUA} and \code{FLAGSTA} vocabularies.
 }
 \details{
 The deposit's \code{README.txt} lists five \code{FLAGSTA} codes. The AM (meteorology)
-section of the ICP IM Manual defines five more — \code{A}, \code{Z}, \code{XA}, \code{XZ} and
-\code{SZ} — and these do occur, in 36,522 rows of version 1. All ten are
+section of the ICP IM Manual defines five more - \code{A}, \code{Z}, \code{XA}, \code{XZ} and
+\code{SZ} - and these do occur, in 36,522 rows of version 1. All ten are
 recorded here.
 
 \code{FLAGSTA} is part of the observation key rather than an annotation: the

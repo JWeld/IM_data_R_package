@@ -12,7 +12,7 @@ im_read(
   substances = NULL,
   stat = NULL,
   decode = TRUE,
-  repair = TRUE,
+  repair = "auto",
   quiet = NULL,
   version = im_version()
 )
@@ -39,8 +39,14 @@ codes (\code{"X"}, \code{"S"}) or the decoded names in \code{stat} (\code{"mean"
 
 \item{decode}{Logical. Join the code lists to add readable name columns?}
 
-\item{repair}{Logical. Restore the sodium substance code? See details.
-Turning this off gives you the file exactly as published.}
+\item{repair}{Correct the blank sodium substance code. \code{"auto"}, the
+default, applies the correction to version 1 and leaves every later
+version untouched, since the issue is fixed from version 2 onwards. A
+correctly coded file needs no repair and is passed through unchanged
+whatever this is set to. \code{TRUE} forces the correction, \code{FALSE} returns
+the file exactly as published. Under \code{"auto"}, blank codes found in a
+version that should not have them are reported rather than assumed to be
+sodium.}
 
 \item{quiet}{Logical. Suppress progress and one-time notes.}
 
@@ -57,12 +63,12 @@ IM open dataset. This is the main entry point of the package.
 \itemize{
 \item \strong{Types every column explicitly.} \code{SCODE} keeps its leading zeros;
 \code{VALUE} is numeric; nothing is guessed.
-\item \strong{Restores the sodium code.} In the published files the substance code
-for sodium is blank in 48,441 rows across twelve subprogrammes. The
-underlying code is the literal string \code{"NA"}, which was consumed as a
-missing value somewhere upstream of publication. With \code{repair = TRUE}
-(the default) those rows are given \code{SUBST == "NA"} back. See
-\code{vignette("icpim")} for the evidence.
+\item \strong{Corrects the sodium code on read.} A known issue affecting \strong{version 1
+only}: the substance code for sodium is blank in 48,441 rows across
+twelve subprogrammes, the literal string \code{"NA"} having been consumed as a
+missing value before publication. It is corrected in version 2 onwards.
+By default this is put right on read for version 1 and left alone
+afterwards; see the \code{repair} argument.
 \item \strong{Decodes the code lists.} \code{SUBST}/\code{PARAM}, \code{DETER} and \code{PRETRE} gain
 readable companion columns (\code{substance}, \code{determination}, \code{pretreatment}).
 \item \strong{Parses dates.} \code{YYYYMM} becomes \code{date}, \code{year} and \code{month}. Annual

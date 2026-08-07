@@ -3,7 +3,7 @@
 #' The published data are long: one row per measured value. Most analyses want
 #' one row per sample and one column per determinand. This pivots safely.
 #'
-#' The identifying columns default to everything that distinguishes a sample —
+#' The identifying columns default to everything that distinguishes a sample -
 #' including `FLAGSTA`, which matters: in `AM` the same site, level and month
 #' carries a mean, a minimum and a maximum as separate rows, and dropping the
 #' flag from the key silently collapses them. If a key still has duplicates,
@@ -49,12 +49,21 @@ im_widen <- function(x,
   }
   id_cols <- setdiff(id_cols, c(names_from, values_from))
 
-  dup <- sum(duplicated(x[, c(id_cols, names_from), drop = FALSE]))
+  keys <- x[, c(id_cols, names_from), drop = FALSE]
+  dup <- sum(duplicated(keys))
   if (dup > 0 && is.null(values_fn)) {
+    culprits <- varying_within_duplicates(x, keys)
+    pct <- signif(100 * dup / nrow(x), 2)
     cli::cli_abort(c(
-      "{dup} duplicate key{?s} would collapse silently.",
-      "i" = "Add columns to {.arg id_cols}, or set {.arg values_fn} (e.g. {.code mean}).",
-      "i" = "In {.field AM} the usual cause is {.field FLAGSTA}: filter with {.code stat=} first."
+      "{dup} duplicate key{?s} ({pct}% of rows) would collapse silently.",
+      if (length(culprits)) {
+        c("i" = "Within those keys, {.field {culprits}} {?varies/vary}: the
+           same sample measured more than one way.")
+      },
+      "i" = "Add to {.arg id_cols} to keep them apart, or set {.arg values_fn}
+             (e.g. {.code mean}) to combine them.",
+      "i" = "In {.field AM} the usual cause is instead {.field FLAGSTA}:
+             filter with {.code stat=} first."
     ))
   }
 
@@ -65,6 +74,28 @@ im_widen <- function(x,
     values_from = dplyr::all_of(values_from),
     values_fn = values_fn
   )
+}
+
+# Which columns differ between rows that share a pivot key? Almost always
+# DETER/PRETRE - the same sample analysed by two methods - so naming them
+# turns a blocking error into an actionable one. Computed only on the
+# duplicated rows, which are typically a fraction of a percent.
+varying_within_duplicates <- function(x, keys) {
+  dup <- duplicated(keys) | duplicated(keys, fromLast = TRUE)
+  if (!any(dup)) return(character())
+  sub <- x[dup, , drop = FALSE]
+  g <- do.call(paste, c(as.list(keys[dup, , drop = FALSE]), sep = "\r"))
+  # Report the published column, not the decoded companion this package adds
+  # alongside it, which would otherwise name every cause twice.
+  decoded <- c("substance", "parameter", "determination", "pretreatment",
+               "stat", "quality")
+  candidates <- setdiff(names(sub), c(names(keys), "VALUE", decoded))
+  varies <- vapply(candidates, function(cn) {
+    v <- sub[[cn]]
+    if (all(is.na(v))) return(FALSE)
+    any(tapply(v, g, function(z) length(unique(z)) > 1L), na.rm = TRUE)
+  }, logical(1))
+  names(varies)[varies]
 }
 
 #' Report the units used for each determinand
