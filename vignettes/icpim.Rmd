@@ -1,0 +1,206 @@
+---
+title: "Getting started with icpim"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting started with icpim}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+library(icpim)
+```
+
+The ICP Integrated Monitoring programme has measured whole forested catchments
+since the late 1980s — deposition, soil, soil water, groundwater, runoff,
+vegetation and biota at the same plots, year after year. The open dataset
+([doi:10.5878/z376-2m63](https://doi.org/10.5878/z376-2m63)) publishes that
+record as 21 CSV files, one per subprogramme, covering 55 sites in 14 countries
+and about 1.2 million observations.
+
+This package downloads those files, caches them, reads them with the right
+column types, and decodes the code lists. It also handles a handful of
+encoding traps that are easy to walk into and hard to notice afterwards.
+
+## What is in the dataset
+
+```{r}
+im_subprogrammes[, c("subprog", "name", "n_rows", "n_sites")]
+```
+
+Sites, with coordinates:
+
+```{r}
+head(im_sites)
+```
+
+## Reading data
+
+`im_read()` is the entry point. The first call downloads and caches the file;
+later calls read from the cache.
+
+```{r, eval = FALSE}
+pc <- im_read("PC", countries = "SE", years = 2000:2019)
+```
+
+Filters for `sites`, `countries`, `years` and `substances` are applied while
+reading, which is worth using — the larger files run to 180,000 rows.
+
+The examples below use the small extracts bundled with the package, so they
+run offline:
+
+```{r}
+pc <- im_read_file(im_example("sample_PC.csv")) |> im_decode()
+head(pc[, c("AREA", "SCODE", "date", "SUBST", "substance", "VALUE", "UNIT")])
+```
+
+Columns in UPPERCASE are exactly as published, so they match the ICP IM Manual
+and the dataset README one for one. Columns in lowercase were added by this
+package.
+
+## Three traps worth knowing about
+
+### Sodium's substance code is the string `NA`
+
+This is the one that will cost you a day. In the ICP IM code list the
+substance code for sodium is the two letters `NA`. Every default CSV reader in
+R treats `"NA"` as a missing value, so:
+
+```{r}
+# What the obvious approach does to the code list:
+tmp <- tempfile(fileext = ".csv")
+write.csv(data.frame(SUBST = c("NA", "CL", "MG"), VALUE = 1:3), tmp,
+          row.names = FALSE)
+read.csv(tmp)$SUBST
+```
+
+Sodium has silently become a missing value, which then deletes every sodium
+record and quietly breaks any `SUBST ==` comparison. The fix is
+`na.strings = ""`, and `icpim` does this for you.
+
+In the published files this has already happened once, upstream of
+publication: sodium's code arrives blank in 48,441 rows across twelve
+subprogrammes. `im_read()` restores it by default.
+
+```{r}
+sum(pc$SUBST == "NA")
+unique(pc$substance[pc$SUBST == "NA"])
+```
+
+Pass `repair = FALSE` to get the file exactly as published.
+
+The evidence that these rows really are sodium: their count tracks chloride
+and magnesium to within about 1% in every water-chemistry file; their units
+are right for sodium in each medium (mg/l in waters, mg/kg in tissue, meq/kg
+exchangeable in soil); and pairing them with chloride at the same site and
+month gives a mass ratio of 1.83 in throughfall against seawater's 1.80.
+Runoff gives 0.86, which is the expected signature of silicate weathering
+adding sodium without chloride.
+
+### Station codes are zero-padded
+
+`SCODE` is a four-digit code such as `"0176"`. Read as a number it becomes
+`176`, and it will no longer join or group correctly.
+
+```{r}
+unique(pc$SCODE)
+```
+
+`SCODE` distinguishes *collectors*, not replicates. A site can have more than
+one gauge, running over different periods. Summing a flux over all of them
+double-counts the overlap and manufactures a step where a collector starts or
+stops, so check before aggregating:
+
+```{r}
+table(pc$SCODE, pc$year)[, 1:3]
+```
+
+### `FLAGSTA` is part of the key, not an annotation
+
+In meteorology especially, the same site, level, month and parameter carries
+several rows that differ only by their status flag: the monthly mean, the
+minimum, the maximum, and the averaged daily extremes.
+
+```{r}
+am <- im_read_file(im_example("sample_AM.csv")) |> im_decode()
+subset(am, SUBST == "TEMP" & LEVEL == 200 & YYYYMM == "200207",
+       select = c(LEVEL, YYYYMM, FLAGSTA, stat, VALUE))
+```
+
+Five rows, one month, one sensor. Averaging without filtering mixes means with
+extremes; across the whole dataset that biases mean air temperature by
++0.42 °C. For precipitation it is worse, because monthly sums (`S`) sit
+alongside maximum *daily* sums (`SZ`).
+
+Use the `stat` argument, which accepts either the codes or the readable names:
+
+```{r, eval = FALSE}
+temp <- im_read("AM", substances = "TEMP", stat = "mean")
+```
+
+`im_widen()` keeps `FLAGSTA` in the key by default, and refuses to pivot
+rather than collapse duplicates silently:
+
+```{r, error = TRUE}
+im_widen(am, id_cols = c("AREA", "SCODE", "LEVEL", "YYYYMM"))
+```
+
+## Going wide
+
+```{r}
+w <- im_widen(pc)
+head(w[, c("AREA", "date", "SO4S", "NO3N", "NA", "CL")])
+```
+
+Note that sodium's column is called `` `NA` ``, and needs backticks.
+
+## Units and detection limits
+
+Units are published per row and are not always consistent within a
+subprogramme. Check before aggregating:
+
+```{r}
+head(im_units(pc), 8)
+```
+
+Values below the detection limit are published as the limit itself, flagged
+`L`. Treating them as measurements biases means upward; dropping them biases
+downward. `im_detection_limit()` makes the choice explicit rather than
+implicit:
+
+```{r}
+halved <- im_detection_limit(pc, action = "half")
+```
+
+## Reproducibility
+
+The deposit is updated annually, and each release is a new version with its
+own DOI. `icpim` pins version 1 so that a script keeps returning the same
+numbers:
+
+```{r}
+im_version()
+im_doi()
+```
+
+Move deliberately with `options(icpim.version = "2")`. The cache is keyed by
+version, so files from two releases are never mixed.
+
+The data are CC BY 4.0, which requires attribution:
+
+```{r}
+im_cite()
+```
+
+## Where files are stored
+
+```{r, eval = FALSE}
+im_cache_dir()   # under tools::R_user_dir("icpim", "cache")
+im_cache_list()  # what is cached
+im_cache_clear() # remove it
+```
+
+Set `options(icpim.cache_dir = "data-raw/icpim")` to keep an analysis
+self-contained, or `im_download("all")` to fetch everything (about 95 MB)
+before going offline.

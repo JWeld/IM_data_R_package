@@ -1,0 +1,48 @@
+Package: icpim
+Title: Access the ICP Integrated Monitoring Open Data
+Version: 0.1.0
+Authors@R: c(
+    person("James", "Weldon", , "weldondesign@gmail.com", role = c("aut", "cre")),
+    person("ICP Integrated Monitoring Programme Centre", role = "dtc",
+           comment = "Data collection and curation"),
+    person("Swedish University of Agricultural Sciences", role = "cph",
+           comment = "Publisher of the underlying dataset"))
+Description: Download, cache and tidy the open dataset of the International
+    Cooperative Programme on Integrated Monitoring of Air Pollution Effects on
+    Ecosystems (ICP IM), published by the Swedish University of Agricultural
+    Sciences at <doi:10.5878/z376-2m63>. The dataset holds long-term integrated
+    ecosystem monitoring from forested catchments in 14 European countries,
+    covering atmospheric chemistry, deposition, soil, soil water, groundwater,
+    runoff, vegetation and biota. Functions resolve and cache the published
+    files, read them with the correct column types, and decode the substance,
+    parameter, determination and pretreatment code lists into readable names.
+    Several encoding traps in the published files are handled explicitly, most
+    importantly the substance code for sodium, which is the literal string
+    "NA".
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+Depends:
+    R (>= 4.1)
+Imports:
+    cli,
+    curl,
+    dplyr (>= 1.1.0),
+    rlang,
+    tibble,
+    tidyr,
+    tools,
+    vroom (>= 1.6.0)
+Suggests:
+    ggplot2,
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0),
+    withr
+VignetteBuilder: knitr
+Config/testthat/edition: 3
+URL: https://github.com/JWeld/IM_data_R_package
+BugReports: https://github.com/JWeld/IM_data_R_package/issues
+LazyData: true
+LazyDataCompression: xz
+Config/roxygen2/version: 8.0.0

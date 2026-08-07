@@ -1,0 +1,13 @@
+url: https://jweld.github.io/IM_data_R_package/
+template:
+  bootstrap: 5
+reference:
+- title: Reading data
+  contents: [im_read, im_read_file, im_download, im_example]
+- title: Decoding and tidying
+  contents: [im_decode, im_codes, im_widen, im_units, im_detection_limit]
+- title: Cache and versions
+  contents: [im_cache_dir, im_cache_list, im_version, im_doi, im_cite]
+- title: Reference data
+  contents: [im_subprogrammes, im_sites, im_substances, im_parameters,
+             im_determinations, im_pretreatments, im_flags]

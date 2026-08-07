@@ -1,0 +1,72 @@
+SUBPROG_COLLECTION,COUNTRY,SUBPROG,AREA,INST,SCODE,SIZE,YYYYMM,SPOOL,TAXONKEY_GBIF,NAME_GBIF,PARAM,PARLIST,VALUE,UNIT,FLAGQUA
+BIO2,Germany,BB,DE01,GR,9999,64,200000,1,9761484,"Anas platyrhynchos Linnaeus, 1758",SPECDEN,IM,0.016,pairs/ha,
+BIO2,Germany,BB,DE01,GR,9999,64,200000,1,2487603,"Certhia familiaris Linnaeus, 1758",SPECDEN,IM,0.078,pairs/ha,
+BIO2,Germany,BB,DE01,GR,9999,64,200000,1,2495455,"Columba palumbus Linnaeus, 1758",SPECDEN,IM,,pairs/ha,V
+BIO2,Germany,BB,DE01,GR,9999,64,200000,1,5231918,"Cuculus canorus Linnaeus, 1758",SPECDEN,IM,,pairs/ha,V
+BIO2,Germany,BB,DE01,GR,9999,64,200000,1,2477872,"Dryocopus martius (Linnaeus, 1758)",SPECDEN,IM,0.016,pairs/ha,
+BIO2,Germany,BB,DE01,GR,9999,64,200000,1,2492462,"Erithacus rubecula (Linnaeus, 1758)",SPECDEN,IM,0.484,pairs/ha,
+BIO2,Germany,BB,DE01,GR,9999,64,200000,1,2492605,"Ficedula parva (Bechstein, 1792)",SPECDEN,IM,0.031,pairs/ha,
+BIO2,Germany,BB,DE01,GR,9999,64,200000,1,2494422,"Fringilla coelebs Linnaeus, 1758",SPECDEN,IM,1.344,pairs/ha,
+BIO2,Germany,BB,DE01,GR,9999,64,200000,1,5229493,"Garrulus glandarius (Linnaeus, 1758)",SPECDEN,IM,,pairs/ha,V
+BIO2,Germany,BB,DE01,GR,9999,64,200000,1,9687165,"Motacilla alba Linnaeus, 1758",SPECDEN,IM,,pairs/ha,V
+BIO2,Germany,BB,DE01,GR,9999,64,200000,1,2490310,"Motacilla cinerea Tunstall, 1771",SPECDEN,IM,0.016,pairs/ha,
+BIO2,Germany,BB,DE01,GR,9999,64,200000,1,2487871,"Periparus ater (Linnaeus, 1758), Animalia, Paridae",SPECDEN,IM,0.281,pairs/ha,
+BIO2,Germany,BB,DE01,GR,9999,64,200000,1,2487883,"Lophophanes cristatus (Linnaeus, 1758), Animalia, Paridae",SPECDEN,IM,0.031,pairs/ha,
+BIO2,Germany,BB,DE01,GR,9999,64,200000,1,9705453,"Parus major Linnaeus, 1758",SPECDEN,IM,0.016,pairs/ha,
+BIO2,Germany,BB,DE01,GR,9999,64,200000,1,2493091,"Phylloscopus collybita (Vieillot, 1817)",SPECDEN,IM,0.063,pairs/ha,
+BIO2,Germany,BB,DE01,GR,9999,64,200000,1,8128385,"Phylloscopus sibillatrix (Bechstein, 1792)",SPECDEN,IM,0.063,pairs/ha,
+BIO2,Germany,BB,DE01,GR,9999,64,200000,1,2493052,"Phylloscopus trochilus (Linnaeus, 1758)",SPECDEN,IM,0.031,pairs/ha,
+BIO2,Germany,BB,DE01,GR,9999,64,200000,1,2477968,"Dendrocopos major (Linnaeus, 1758)",SPECDEN,IM,0.016,pairs/ha,
+BIO2,Germany,BB,DE01,GR,9999,64,200000,1,5231763,"Prunella modularis (Linnaeus, 1758)",SPECDEN,IM,0.016,pairs/ha,
+BIO2,Germany,BB,DE01,GR,9999,64,200000,1,6093527,"Regulus ignicapilla (Temminck, 1820)",SPECDEN,IM,0.234,pairs/ha,
+BIO2,Germany,BB,DE01,GR,9999,64,200000,1,2484596,"Regulus regulus (Linnaeus, 1758)",SPECDEN,IM,0.516,pairs/ha,
+BIO2,Germany,BB,DE01,GR,9999,64,200000,1,2481700,"Scolopax rusticola Linnaeus, 1758",SPECDEN,IM,,pairs/ha,V
+BIO2,Germany,BB,DE01,GR,9999,64,200000,1,2484916,"Sitta europaea Linnaeus, 1758",SPECDEN,IM,0.063,pairs/ha,
+BIO2,Germany,BB,DE01,GR,9999,64,200000,1,2492956,"Sylvia atricapilla (Linnaeus, 1758)",SPECDEN,IM,0.359,pairs/ha,
+BIO2,Germany,BB,DE01,GR,9999,64,200000,1,5231438,"Troglodytes troglodytes (Linnaeus, 1758)",SPECDEN,IM,0.281,pairs/ha,
+BIO2,Germany,BB,DE01,GR,9999,64,200000,1,2490719,"Turdus merula Linnaeus, 1758",SPECDEN,IM,0.156,pairs/ha,
+BIO2,Germany,BB,DE01,GR,9999,64,200000,1,7901064,"Turdus philomelos C.L.Brehm, 1831",SPECDEN,IM,0.063,pairs/ha,
+BIO2,Germany,BB,DE01,GR,9999,64,200000,1,2490774,"Turdus viscivorus Linnaeus, 1758",SPECDEN,IM,0.063,pairs/ha,
+BIO2,Germany,BB,DE01,GR,9999,64,200200,1,2487603,"Certhia familiaris Linnaeus, 1758",SPECDEN,IM,0.094,pairs/ha,
+BIO2,Germany,BB,DE01,GR,9999,64,200200,1,2495455,"Columba palumbus Linnaeus, 1758",SPECDEN,IM,,pairs/ha,V
+BIO2,Germany,BB,DE01,GR,9999,64,200200,1,9409796,"Corvus corone Linnaeus, 1758",SPECDEN,IM,,pairs/ha,V
+BIO2,Germany,BB,DE01,GR,9999,64,200200,1,5231918,"Cuculus canorus Linnaeus, 1758",SPECDEN,IM,,pairs/ha,V
+BIO2,Germany,BB,DE01,GR,9999,64,200200,1,2477872,"Dryocopus martius (Linnaeus, 1758)",SPECDEN,IM,0.016,pairs/ha,
+BIO2,Germany,BB,DE01,GR,9999,64,200200,1,2492462,"Erithacus rubecula (Linnaeus, 1758)",SPECDEN,IM,0.5,pairs/ha,
+BIO2,Germany,BB,DE01,GR,9999,64,200200,1,2492605,"Ficedula parva (Bechstein, 1792)",SPECDEN,IM,0.016,pairs/ha,
+BIO2,Germany,BB,DE01,GR,9999,64,200200,1,2494422,"Fringilla coelebs Linnaeus, 1758",SPECDEN,IM,1.094,pairs/ha,
+BIO2,Germany,BB,DE01,GR,9999,64,200200,1,5229493,"Garrulus glandarius (Linnaeus, 1758)",SPECDEN,IM,,pairs/ha,V
+BIO2,Germany,BB,DE01,GR,9999,64,200200,1,9687165,"Motacilla alba Linnaeus, 1758",SPECDEN,IM,0.016,pairs/ha,
+BIO2,Germany,BB,DE01,GR,9999,64,200200,1,2490310,"Motacilla cinerea Tunstall, 1771",SPECDEN,IM,0.016,pairs/ha,
+BIO2,Germany,BB,DE01,GR,9999,64,200200,1,2487871,"Periparus ater (Linnaeus, 1758), Animalia, Paridae",SPECDEN,IM,0.344,pairs/ha,
+BIO2,Germany,BB,DE01,GR,9999,64,200200,1,2487883,"Lophophanes cristatus (Linnaeus, 1758), Animalia, Paridae",SPECDEN,IM,0.047,pairs/ha,
+BIO2,Germany,BB,DE01,GR,9999,64,200200,1,9705453,"Parus major Linnaeus, 1758",SPECDEN,IM,0.031,pairs/ha,
+BIO2,Germany,BB,DE01,GR,9999,64,200200,1,2493091,"Phylloscopus collybita (Vieillot, 1817)",SPECDEN,IM,0.078,pairs/ha,
+BIO2,Germany,BB,DE01,GR,9999,64,200200,1,8128385,"Phylloscopus sibillatrix (Bechstein, 1792)",SPECDEN,IM,0.031,pairs/ha,
+BIO2,Germany,BB,DE01,GR,9999,64,200200,1,2493052,"Phylloscopus trochilus (Linnaeus, 1758)",SPECDEN,IM,0.016,pairs/ha,
+BIO2,Germany,BB,DE01,GR,9999,64,200200,1,2477968,"Dendrocopos major (Linnaeus, 1758)",SPECDEN,IM,,pairs/ha,V
+BIO2,Germany,BB,DE01,GR,9999,64,200200,1,5231763,"Prunella modularis (Linnaeus, 1758)",SPECDEN,IM,0.047,pairs/ha,
+BIO2,Germany,BB,DE01,GR,9999,64,200200,1,6093527,"Regulus ignicapilla (Temminck, 1820)",SPECDEN,IM,0.266,pairs/ha,
+BIO2,Germany,BB,DE01,GR,9999,64,200200,1,2484596,"Regulus regulus (Linnaeus, 1758)",SPECDEN,IM,0.406,pairs/ha,
+BIO2,Germany,BB,DE01,GR,9999,64,200200,1,2484916,"Sitta europaea Linnaeus, 1758",SPECDEN,IM,0.047,pairs/ha,
+BIO2,Germany,BB,DE01,GR,9999,64,200200,1,2492956,"Sylvia atricapilla (Linnaeus, 1758)",SPECDEN,IM,0.328,pairs/ha,
+BIO2,Germany,BB,DE01,GR,9999,64,200200,1,7191070,Lyrurus tetrix tetrix,SPECDEN,IM,,pairs/ha,V
+BIO2,Germany,BB,DE01,GR,9999,64,200200,1,5231438,"Troglodytes troglodytes (Linnaeus, 1758)",SPECDEN,IM,0.438,pairs/ha,
+BIO2,Germany,BB,DE01,GR,9999,64,200200,1,2490719,"Turdus merula Linnaeus, 1758",SPECDEN,IM,0.156,pairs/ha,
+BIO2,Germany,BB,DE01,GR,9999,64,200200,1,7901064,"Turdus philomelos C.L.Brehm, 1831",SPECDEN,IM,0.047,pairs/ha,
+BIO2,Germany,BB,DE01,GR,9999,64,200200,1,2490774,"Turdus viscivorus Linnaeus, 1758",SPECDEN,IM,,pairs/ha,V
+BIO2,Czech Republic,BB,CZ02,CG,0001,27.3,201000,1,6092830,"Spinus spinus (Linnaeus, 1758)",SPECDEN,IM,0.24,pairs/ha,
+BIO2,Czech Republic,BB,CZ02,CG,0001,27.3,201000,1,2495455,"Columba palumbus Linnaeus, 1758",SPECDEN,IM,0.2,pairs/ha,
+BIO2,Czech Republic,BB,CZ02,CG,0001,27.3,201000,1,2477968,"Dendrocopos major (Linnaeus, 1758)",SPECDEN,IM,0.1,pairs/ha,
+BIO2,Czech Republic,BB,CZ02,CG,0001,27.3,201000,1,2477872,"Dryocopus martius (Linnaeus, 1758)",SPECDEN,IM,,pairs/ha,V
+BIO2,Czech Republic,BB,CZ02,CG,0001,27.3,201000,1,2492462,"Erithacus rubecula (Linnaeus, 1758)",SPECDEN,IM,0.13,pairs/ha,
+BIO2,Czech Republic,BB,CZ02,CG,0001,27.3,201000,1,2494422,"Fringilla coelebs Linnaeus, 1758",SPECDEN,IM,0.8,pairs/ha,
+BIO2,Czech Republic,BB,CZ02,CG,0001,27.3,201000,1,9629160,"Loxia curvirostra Linnaeus, 1758",SPECDEN,IM,0.23,pairs/ha,
+BIO2,Czech Republic,BB,CZ02,CG,0001,27.3,201000,1,2482613,"Nucifraga caryocatactes (Linnaeus, 1758)",SPECDEN,IM,,pairs/ha,V
+BIO2,Czech Republic,BB,CZ02,CG,0001,27.3,201000,1,2487871,"Periparus ater (Linnaeus, 1758), Animalia, Paridae",SPECDEN,IM,0.16,pairs/ha,
+BIO2,Czech Republic,BB,CZ02,CG,0001,27.3,201000,1,9705453,"Parus major Linnaeus, 1758",SPECDEN,IM,0.12,pairs/ha,
+BIO2,Czech Republic,BB,CZ02,CG,0001,27.3,201000,1,2493091,"Phylloscopus collybita (Vieillot, 1817)",SPECDEN,IM,0.24,pairs/ha,
+BIO2,Czech Republic,BB,CZ02,CG,0001,27.3,201000,1,8128385,"Phylloscopus sibillatrix (Bechstein, 1792)",SPECDEN,IM,0.08,pairs/ha,
+BIO2,Czech Republic,BB,CZ02,CG,0001,27.3,201000,1,2484596,"Regulus regulus (Linnaeus, 1758)",SPECDEN,IM,0.36,pairs/ha,
+BIO2,Czech Republic,BB,CZ02,CG,0001,27.3,201000,1,2490719,"Turdus merula Linnaeus, 1758",SPECDEN,IM,0.08,pairs/ha,
+BIO2,Czech Republic,BB,CZ02,CG,0001,27.3,201000,1,7901064,"Turdus philomelos C.L.Brehm, 1831",SPECDEN,IM,0.16,pairs/ha,
