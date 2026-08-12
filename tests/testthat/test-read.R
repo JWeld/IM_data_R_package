@@ -74,10 +74,13 @@ test_that("blank codes in an unaffected version are reported, not assumed", {
   file.copy(im_example("sample_PC.csv"),
             file.path(im_cache_dir(create = TRUE),
                       "PC_precipitation_chemistry.csv"))
-  expect_warning(
-    out <- im_read("PC", quiet = TRUE),
-    "blank substance code"
-  )
+  # Two distinct things are wrong here and both should be said out loud: the
+  # blank codes, and that version 2's code lists are not available so version
+  # 1's are being used.
+  warns <- capture_warnings(out <- im_read("PC", quiet = TRUE))
+  expect_match(warns, "blank substance code", all = FALSE)
+  expect_match(warns, "code lists published for", all = FALSE)
+
   # Left missing rather than silently called sodium.
   expect_equal(sum(is.na(out$SUBST)), 60)
 })

@@ -66,6 +66,16 @@ this package, so an ordinary release needs no code change:
 * Code lists published with a version this package was not built against are
   fetched and cached on first use, so a release that adds substances decodes
   without an update. `im_update_codes()` refreshes them by hand.
+* If those lists cannot be fetched, decoding falls back to the bundled ones
+  and says so, once per session. That fallback is the one failure here that
+  would otherwise be silent and wrong rather than merely absent, since names
+  would resolve against the wrong vocabulary. It also catches the maintainer
+  error of moving the default version without fetching the new lists.
+* The bundled lookups carry a stamp of the release they were built from, and a
+  test asserts it matches `IM_BUNDLED_VERSION`. That catches the other half of
+  the same mistake: editing the constant without rerunning
+  `data-raw/make_data.R`, which would leave the older lists in place labelled
+  as the newer ones.
 * `im_doi()`, `im_dataset_info()` and `im_cite()` follow the pinned version,
   since each release has its own DOI. Where a version's DOI cannot be
   established they report `NA` and say so, rather than returning the DOI of a

@@ -40,10 +40,35 @@ test_that("an unreachable repository falls back rather than failing", {
   expect_equal(nrow(known_subprogs("99")), 21L)
 })
 
-test_that("a version with no cached code lists falls back to the bundled ones", {
+test_that("falling back to another release's code lists is not silent", {
   withr::local_options(icpim.cache_dir = withr::local_tempdir())
   local_mocked_bindings(im_update_codes = function(...) invisible(NULL))
-  expect_identical(codes_for("substances", "99"), im_substances)
+  # Clear the once-per-session guards so the warning can fire.
+  rm(list = ls(the, all.names = TRUE), envir = the)
+
+  expect_warning(
+    out <- codes_for("substances", "99"),
+    "code lists published for"
+  )
+  expect_identical(out, im_substances)
+
+  # Warned once, not on every lookup.
+  expect_no_warning(codes_for("parameters", "99"))
+})
+
+test_that("the bundled lookups are stamped with the release they came from", {
+  # Guards the maintainer error the runtime warning cannot see: bumping
+  # IM_BUNDLED_VERSION without rerunning data-raw/make_data.R would leave the
+  # older release's lists in place, labelled as the newer one's.
+  stamp <- attr(im_subprogrammes, "dataset_version")
+  expect_false(is.null(stamp))
+  expect_equal(stamp, IM_BUNDLED_VERSION)
+  expect_false(is.null(attr(im_subprogrammes, "built")))
+})
+
+test_that("the bundled version needs no fetch and gives no warning", {
+  expect_no_warning(codes_for("substances", IM_BUNDLED_VERSION))
+  expect_identical(codes_for("substances", IM_BUNDLED_VERSION), im_substances)
 })
 
 test_that("resolve_subprog reports the codes valid for the release asked for", {

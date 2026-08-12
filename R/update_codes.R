@@ -169,13 +169,43 @@ codes_for <- function(which, version = im_version()) {
     # First read of an unfamiliar release: fetch once, and remember the
     # attempt so a failure does not retry on every call.
     key <- paste0("codes_tried_", version)
-    if (isTRUE(the[[key]])) return(bundled)
-    the[[key]] <- TRUE
-    im_update_codes(version, quiet = TRUE)
+    if (!isTRUE(the[[key]])) {
+      the[[key]] <- TRUE
+      im_update_codes(version, quiet = TRUE)
+    }
   }
-  if (!file.exists(p)) return(bundled)
+  if (!file.exists(p)) return(warn_code_fallback(version, bundled))
 
   tabs <- tryCatch(readRDS(p), error = function(e) NULL)
-  if (is.null(tabs) || is.null(tabs[[which]])) return(bundled)
+  if (is.null(tabs) || is.null(tabs[[which]])) {
+    return(warn_code_fallback(version, bundled))
+  }
   tabs[[which]]
+}
+
+# Falling back to another release's code lists is the one failure here that is
+# silent and wrong rather than merely absent: names would be decoded against
+# the wrong vocabulary, and a code added in the newer release would come back
+# NA with nothing to say why. Warn once per version per session.
+#
+# This also catches the maintainer's mistake of moving the default version
+# without rebuilding the bundled lookups: the package then reads a release it
+# has no code lists for, and says so the first time anyone runs it.
+warn_code_fallback <- function(version, bundled) {
+  key <- paste0("codes_warned_", version)
+  if (!isTRUE(the[[key]])) {
+    the[[key]] <- TRUE
+    cli::cli_warn(c(
+      "Decoding version {.val {version}} with the code lists published for
+       version {.val {IM_BUNDLED_VERSION}}.",
+      "!" = "Codes added since then will not resolve, and any that were
+             redefined will decode to the older meaning.",
+      "i" = "Run {.run icpim::im_update_codes()} with a network connection to
+             fetch the lists for this release.",
+      "i" = "If you maintain this package, this also means the bundled lookups
+             are older than the default version: rerun
+             {.file data-raw/make_data.R}."
+    ))
+  }
+  bundled
 }

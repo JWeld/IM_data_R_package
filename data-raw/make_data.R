@@ -145,6 +145,14 @@ im_subprogrammes <- tibble::tribble(
   "VS", "Vegetation structure",          "VS_vegetation_structure.csv",     "BIO2", "PARAM"
 )
 
+# Stamp which release these were actually built from. IM_BUNDLED_VERSION is a
+# constant in R/api.R and can be edited independently; the stamp records what
+# was really fetched, so a test can catch the two drifting apart. Without it,
+# bumping the constant without rerunning this script would leave the older
+# release's code lists in place, labelled as the newer one's, in silence.
+attr(im_subprogrammes, "dataset_version") <- IM_BUNDLED_VERSION
+attr(im_subprogrammes, "built") <- as.character(Sys.Date())
+
 usethis::use_data(
   im_subprogrammes, im_sites, im_substances, im_parameters,
   im_determinations, im_pretreatments, im_flags,
