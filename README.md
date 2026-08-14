@@ -4,7 +4,7 @@
 [![R-CMD-check](https://github.com/JWeld/IM_data_R_package/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/JWeld/IM_data_R_package/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
-## **IMPORTANT! THIS PACKAGE IS EXPERIMENTAL AND UNDER DEVELOPMENT - ITS OUTPUTS ARE NOT VERIFIED AND IT SHOULD NOT BE USED YET FOR REAL WORK!**
+## **IMPORTANT! THIS PACKAGE IS EXPERIMENTAL AND UNDER DEVELOPMENT - ITS OUTPUTS ARE NOT VERIFIED AND IT SHOULD NOT BE USED YET FOR REAL WORK! It has been developed by Claude Code (Opus 5 and Fable)**
 
 Access the open dataset of the **International Cooperative Programme on
 Integrated Monitoring of Air Pollution Effects on Ecosystems (ICP IM)** from R.
