@@ -119,6 +119,16 @@ varying_within_duplicates <- function(x, keys) {
 #' }
 im_units <- function(x) {
   stopifnot(is.data.frame(x))
+  # The producer drops columns that are empty throughout a subprogramme, so the
+  # published column set varies. Say which column is missing rather than let
+  # the failure surface as a tidy-select error.
+  if (!"UNIT" %in% names(x)) {
+    cli::cli_abort(c(
+      "No {.field UNIT} column in this table.",
+      "i" = "Columns empty throughout a subprogramme are not published, so the
+             column set differs between subprogrammes and between releases."
+    ))
+  }
   key <- im_key_col(x)
   out <- dplyr::count(x, .data[[key]], .data$UNIT, name = "n")
   out <- dplyr::arrange(out, .data[[key]], dplyr::desc(.data$n))

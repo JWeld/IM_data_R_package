@@ -40,6 +40,16 @@ read_doc <- function(f) {
   read_doc_csv(tmp)
 }
 
+# Rows with no code cannot be joined to anything, so they are discarded - but
+# not silently. A malformed future release would otherwise lose rows here with
+# nothing in the build log to show for it.
+drop_uncoded <- function(x, what) {
+  keep <- !is.na(x$code)
+  dropped <- sum(!keep)
+  message("  ", what, ": ", sum(keep), " kept, ", dropped, " dropped (no code)")
+  x[keep, , drop = FALSE]
+}
+
 # Substances --------------------------------------------------------------
 subs <- read_doc("substance_codes.csv")
 im_substances <- tibble(
@@ -49,7 +59,7 @@ im_substances <- tibble(
   cas         = subs$CASnumber,
   description = subs$Description
 )
-im_substances <- im_substances[!is.na(im_substances$code), ]
+im_substances <- drop_uncoded(im_substances, "substances")
 stopifnot("NA" %in% im_substances$code)  # sodium survived
 stopifnot(im_substances$name[im_substances$code == "NA"] == "Sodium")
 
@@ -65,7 +75,7 @@ im_parameters <- tibble(
   minimum      = suppressWarnings(as.numeric(par$Minimum)),
   maximum      = suppressWarnings(as.numeric(par$Maximum))
 )
-im_parameters <- im_parameters[!is.na(im_parameters$code), ]
+im_parameters <- drop_uncoded(im_parameters, "parameters")
 
 # Determination and pretreatment methods -----------------------------------
 det <- read_doc("determination_codes.csv")
@@ -74,14 +84,14 @@ im_determinations <- tibble(
   name = det$Description,
   note = det$NOTE
 )
-im_determinations <- im_determinations[!is.na(im_determinations$code), ]
+im_determinations <- drop_uncoded(im_determinations, "determinations")
 
 pre <- read_doc("pretreatment_codes.csv")
 im_pretreatments <- tibble(
   code = pre$PretreatmentCode,
   name = pre$Description
 )
-im_pretreatments <- im_pretreatments[!is.na(im_pretreatments$code), ]
+im_pretreatments <- drop_uncoded(im_pretreatments, "pretreatments")
 
 # Sites -------------------------------------------------------------------
 sit <- read_doc("IM_sites_info.csv")

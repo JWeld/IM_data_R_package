@@ -28,8 +28,8 @@ IM_NUMERIC_COLS <- c(
 #' * **Types every column explicitly.** `SCODE` keeps its leading zeros;
 #'   `VALUE` is numeric; nothing is guessed.
 #' * **Corrects the sodium code on read.** A known issue affecting **version 1
-#'   only**: the substance code for sodium is blank in 48,441 rows across
-#'   twelve subprogrammes, the literal string `"NA"` having been consumed as a
+#'   only**: the substance code for sodium is blank in 48,444 rows across
+#'   thirteen subprogrammes, the literal string `"NA"` having been consumed as a
 #'   missing value before publication. It is corrected in version 2 onwards.
 #'   By default this is put right on read for version 1 and left alone
 #'   afterwards; see the `repair` argument.
@@ -61,8 +61,9 @@ IM_NUMERIC_COLS <- c(
 #'   chemistry. See [im_subprogrammes] for the full list.
 #' @param sites Optional character vector of site codes (the `AREA` column),
 #'   e.g. `c("SE14", "SE15")`. Case-insensitive.
-#' @param countries Optional character vector of two-letter ISO country codes,
-#'   e.g. `"SE"`.
+#' @param countries Optional character vector of countries, given either as
+#'   the two-letter ISO code that prefixes `AREA` (`"SE"`) or as the full name
+#'   as it appears in `COUNTRY` (`"Sweden"`). Case-insensitive.
 #' @param years Optional numeric vector of years to keep, e.g. `2000:2019`.
 #' @param substances Optional character vector of substance or parameter codes
 #'   to keep, matched against `SUBST` or `PARAM` as appropriate, e.g.
@@ -79,10 +80,14 @@ IM_NUMERIC_COLS <- c(
 #'   the file exactly as published. Under `"auto"`, blank codes found in a
 #'   version that should not have them are reported rather than assumed to be
 #'   sodium.
-#' @param quiet Logical. Suppress progress and one-time notes.
+#' @param quiet Logical. Suppress progress and one-time notes. It does not
+#'   silence the warning raised when a filter matches nothing, which is a
+#'   diagnostic rather than progress; use [suppressWarnings()] for that.
 #' @param version Dataset version. Defaults to [im_version()].
 #'
 #' @return A [tibble][tibble::tibble] with one row per published observation.
+#'   A filter that matches nothing returns an empty table and warns, rather
+#'   than leaving you to work out which argument was wrong.
 #' @seealso [im_widen()] to pivot to one column per substance,
 #'   [im_subprogrammes] for what is available.
 #' @export
@@ -135,20 +140,31 @@ im_read <- function(subprog,
   attr(out, "icpim_blank_subst") <- NULL
 
   # Filters, applied before decoding so the joins are as small as possible.
+  # Each reports rather than silently emptying the table: a filter that matches
+  # nothing is nearly always a typo or the wrong vocabulary, and finding that
+  # out from a zero-row result costs an afternoon.
   if (!is.null(sites)) {
-    out <- out[toupper(out$AREA) %in% toupper(sites), , drop = FALSE]
+    keep <- toupper(out$AREA) %in% toupper(sites)
+    out <- filter_rows(out, keep, "sites", sites, out$AREA)
   }
   if (!is.null(countries)) {
     cc <- toupper(countries)
-    # COUNTRY holds full names; AREA is prefixed with the ISO code.
-    out <- out[substr(toupper(out$AREA), 1, 2) %in% cc, , drop = FALSE]
+    # AREA carries the ISO code; COUNTRY carries the full name. Accept either,
+    # since the full name is what a reader sees in the data.
+    iso  <- substr(toupper(out$AREA), 1, 2)
+    full <- if ("COUNTRY" %in% names(out)) toupper(out$COUNTRY) else rep(NA_character_, nrow(out))
+    keep <- iso %in% cc | (!is.na(full) & full %in% cc)
+    out <- filter_rows(out, keep, "countries", countries,
+                       unique(c(substr(out$AREA, 1, 2), out$COUNTRY)))
   }
   if (!is.null(years)) {
-    out <- out[!is.na(out$year) & out$year %in% years, , drop = FALSE]
+    keep <- !is.na(out$year) & out$year %in% years
+    out <- filter_rows(out, keep, "years", years, out$year)
   }
   if (!is.null(substances)) {
     key <- im_key_col(out)
-    out <- out[!is.na(out[[key]]) & out[[key]] %in% substances, , drop = FALSE]
+    keep <- !is.na(out[[key]]) & out[[key]] %in% substances
+    out <- filter_rows(out, keep, "substances", substances, out[[key]])
   }
   if (!is.null(stat)) {
     out <- filter_stat(out, stat)
@@ -184,8 +200,9 @@ im_read <- function(subprog,
     # Counted on what is returned, not on the file, so it cannot look larger
     # than `rows_read` after filtering. In version 1 no row carried the sodium
     # code already, so every "NA" here is one this package put back.
-    sodium_corrected = if (isTRUE(repair_now) && "SUBST" %in% names(out)) {
-      sum(out$SUBST == "NA", na.rm = TRUE)
+    sodium_corrected = if (isTRUE(repair_now)) {
+      k <- im_key_col(out)
+      if (k %in% names(out)) sum(out[[k]] == "NA", na.rm = TRUE) else 0L
     } else 0L
   )
 }
@@ -230,21 +247,24 @@ im_read_file <- function(path, repair = TRUE, quiet = TRUE) {
   #
   # Where the code is already correct - version 2 onwards - there are no blanks
   # and this is a no-op, so a correctly coded file passes through untouched.
+  # Both code columns, not just SUBST. Sodium is measured in tree biomass too,
+  # where the determinand column is PARAM: three rows of BI carry the blank in
+  # version 1, and they belong to the same issue.
   n_blank <- 0L
-  if ("SUBST" %in% names(raw)) {
-    blank <- !is.na(raw$SUBST) & !nzchar(trimws(raw$SUBST))
-    n_blank <- sum(blank)
-    if (isTRUE(repair) && n_blank > 0) {
-      raw$SUBST[blank] <- "NA"
-      if (!quiet && !the$warned_sodium) {
-        the$warned_sodium <- TRUE
-        cli::cli_alert_info(c(
-          "Restored the sodium substance code in {n_blank} row{?s} ",
-          "(blank in version 1; the code is the string {.val NA}). ",
-          "Use {.code repair = FALSE} for the file exactly as published."
-        ))
-      }
-    }
+  for (col in intersect(c("SUBST", "PARAM"), names(raw))) {
+    blank <- !is.na(raw[[col]]) & !nzchar(trimws(raw[[col]]))
+    n <- sum(blank)
+    if (n == 0L) next
+    n_blank <- n_blank + n
+    if (isTRUE(repair)) raw[[col]][blank] <- "NA"
+  }
+  if (isTRUE(repair) && n_blank > 0 && !quiet && !the$warned_sodium) {
+    the$warned_sodium <- TRUE
+    cli::cli_alert_info(c(
+      "Restored the sodium code in {n_blank} row{?s} ",
+      "(blank in version 1; the code is the string {.val NA}). ",
+      "Use {.code repair = FALSE} for the file exactly as published."
+    ))
   }
 
   # Now apply the one NA rule the dataset README states: an empty cell means
@@ -310,6 +330,20 @@ im_key_col <- function(x) {
   if ("SUBST" %in% names(x)) "SUBST" else "PARAM"
 }
 
+# Apply a filter, and say so if it removed everything. `available` is what the
+# column actually holds, so the message can show what could have matched.
+filter_rows <- function(x, keep, arg, wanted, available) {
+  if (nrow(x) > 0L && !any(keep)) {
+    avail <- sort(unique(available[!is.na(available)]))
+    cli::cli_warn(c(
+      "{.arg {arg}} matched no rows; the result is empty.",
+      "i" = "Asked for {.val {wanted}}.",
+      "i" = "This subprogramme has {.val {utils::head(avail, 12)}}{if (length(avail) > 12) ' ...' else ''}"
+    ))
+  }
+  x[keep, , drop = FALSE]
+}
+
 filter_stat <- function(x, stat) {
   if (!"FLAGSTA" %in% names(x)) {
     cli::cli_warn("This subprogramme has no {.field FLAGSTA}; {.arg stat} ignored.")
@@ -327,7 +361,8 @@ filter_stat <- function(x, stat) {
     codes <- union(codes, want)
     keep <- keep | (!is.na(x$FLAGSTA) & x$FLAGSTA %in% codes)
   }
-  x[keep, , drop = FALSE]
+  filter_rows(x, keep, "stat", stat,
+              c(x$FLAGSTA, if (anyNA(x$FLAGSTA)) "primary"))
 }
 
 has_mixed_stats <- function(x) {

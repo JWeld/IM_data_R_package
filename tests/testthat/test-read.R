@@ -85,6 +85,26 @@ test_that("blank codes in an unaffected version are reported, not assumed", {
   expect_equal(sum(is.na(out$SUBST)), 60)
 })
 
+test_that("the sodium repair covers PARAM, not just SUBST", {
+  # Sodium is measured in tree biomass, where the determinand column is PARAM.
+  # Repairing only SUBST left these three rows missing.
+  bi <- im_read_file(im_example("sample_BI.csv"), repair = TRUE)
+  expect_equal(sum(bi$PARAM == "NA", na.rm = TRUE), 3L)
+  expect_false(anyNA(bi$PARAM))
+
+  named <- im_decode(bi)
+  expect_equal(unique(named$parameter[named$PARAM == "NA"]), "Sodium")
+
+  # And it is genuinely a substance-list code, as PARLIST says.
+  expect_equal(unique(bi$PARLIST[bi$PARAM == "NA"]), "DB")
+})
+
+test_that("repair = FALSE leaves PARAM blanks missing too", {
+  bi <- im_read_file(im_example("sample_BI.csv"), repair = FALSE)
+  expect_equal(sum(is.na(bi$PARAM)), 3L)
+  expect_false(any(bi$PARAM == "NA", na.rm = TRUE))
+})
+
 test_that("repair = FALSE returns the file as published", {
   pc <- im_read_file(im_example("sample_PC.csv"), repair = FALSE)
   expect_equal(sum(is.na(pc$SUBST)), 60)

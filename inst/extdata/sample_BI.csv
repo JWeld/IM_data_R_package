@@ -1,0 +1,54 @@
+SUBPROG_COLLECTION,COUNTRY,SUBPROG,AREA,INST,SCODE,MEDIUM,LISTMED,MEDIUM_TAXONKEY_GBIF,MEDIUM_NAME_GBIF,SIZE,YYYYMM,SPOOL,TAXONKEY_GBIF,NAME_GBIF,CLASS,PARAM,PARLIST,VALUE,UNIT,FLAGSTA
+BIO2,Czech Republic,BI,CZ02,CG,0001,,,,,27.3,199407,1,,,,AG,DB,0.22,kg,S
+BIO2,Czech Republic,BI,CZ02,CG,0001,,,,,27.3,199407,1,,,,AL,DB,144,kg,S
+BIO2,Czech Republic,BI,CZ02,CG,0001,,,,,27.3,199407,1,,,,B,DB,19,kg,S
+BIO2,Czech Republic,BI,CZ02,CG,0001,,,,,27.3,199407,1,,,,BIOM,IM,3370,ton,S
+BIO2,Czech Republic,BI,CZ02,CG,0001,,,,,27.3,199407,1,,,,CA,DB,5460,kg,S
+BIO2,Czech Republic,BI,CZ02,CG,0001,,,,,27.3,199407,1,,,,CD,DB,0.52,kg,S
+BIO2,Czech Republic,BI,CZ02,CG,0001,,,,,27.3,199407,1,,,,CO,DB,0.58,kg,S
+BIO2,Czech Republic,BI,CZ02,CG,0001,,,,,27.3,199407,1,,,,CR,DB,18,kg,S
+BIO2,Czech Republic,BI,CZ02,CG,0001,,,,,27.3,199407,1,,,,CU,DB,5.2,kg,S
+BIO2,Czech Republic,BI,CZ02,CG,0001,,,,,27.3,199407,1,,,,FE,DB,503,kg,S
+BIO2,Czech Republic,BI,CZ02,CG,0001,,,,,27.3,199407,1,,,,K,DB,4730,kg,S
+BIO2,Czech Republic,BI,CZ02,CG,0001,,,,,27.3,199407,1,,,,MG,DB,689,kg,S
+BIO2,Czech Republic,BI,CZ02,CG,0001,,,,,27.3,199407,1,,,,MN,DB,616,kg,S
+BIO2,Czech Republic,BI,CZ02,CG,0001,,,,,27.3,199407,1,,,,MO,DB,0.98,kg,S
+BIO2,Czech Republic,BI,CZ02,CG,0001,,,,,27.3,199407,1,,,,,DB,45,kg,S
+BIO2,Czech Republic,BI,CZ02,CG,0001,,,,,27.3,199407,1,,,,NI,DB,3.3,kg,S
+BIO2,Czech Republic,BI,CZ02,CG,0001,,,,,27.3,199407,1,,,,NTOT,DB,12900,kg,S
+BIO2,Czech Republic,BI,CZ02,CG,0001,,,,,27.3,199407,1,,,,PB,DB,4.5,kg,S
+BIO2,Czech Republic,BI,CZ02,CG,0001,,,,,27.3,199407,1,,,,PTOT,DB,1150,kg,S
+BIO2,Czech Republic,BI,CZ02,CG,0001,,,,,27.3,199407,1,,,,SE,DB,5.2,kg,S
+BIO2,Czech Republic,BI,CZ02,CG,0001,,,,,27.3,199407,1,,,,SI,DB,196,kg,S
+BIO2,Czech Republic,BI,CZ02,CG,0001,,,,,27.3,199407,1,,,,STOT,DB,3900,kg,S
+BIO2,Czech Republic,BI,CZ02,CG,0001,,,,,27.3,199407,1,,,,TC,DB,1630000,kg,S
+BIO2,Czech Republic,BI,CZ02,CG,0001,,,,,27.3,199407,1,,,,V,DB,1.1,kg,S
+BIO2,Czech Republic,BI,CZ02,CG,0001,,,,,27.3,199407,1,,,,ZN,DB,80,kg,S
+BIO2,Estonia,BI,EE02,SS,0111,,,5285637,Pinus sylvestris L.,1,201200,1,,,,B,DB,0,kg,
+BIO2,Estonia,BI,EE02,SS,0111,,,5285637,Pinus sylvestris L.,1,201200,1,,,,CA,DB,214,kg,
+BIO2,Estonia,BI,EE02,SS,0111,,,5285637,Pinus sylvestris L.,1,201200,1,,,,CU,DB,1,kg,
+BIO2,Estonia,BI,EE02,SS,0111,,,5285637,Pinus sylvestris L.,1,201200,1,,,,FE,DB,12,kg,
+BIO2,Estonia,BI,EE02,SS,0111,,,5285637,Pinus sylvestris L.,1,201200,1,,,,K,DB,158,kg,
+BIO2,Estonia,BI,EE02,SS,0111,,,5285637,Pinus sylvestris L.,1,201200,1,,,,MG,DB,61,kg,
+BIO2,Estonia,BI,EE02,SS,0111,,,5285637,Pinus sylvestris L.,1,201200,1,,,,MN,DB,37,kg,
+BIO2,Estonia,BI,EE02,SS,0111,,,5285637,Pinus sylvestris L.,1,201200,1,,,,,DB,9,kg,
+BIO2,Estonia,BI,EE02,SS,0111,,,5285637,Pinus sylvestris L.,1,201200,1,,,,NTOT,DB,372,kg,
+BIO2,Estonia,BI,EE02,SS,0111,,,5285637,Pinus sylvestris L.,1,201200,1,,,,PTOT,DB,61,kg,
+BIO2,Estonia,BI,EE02,SS,0111,,,5285637,Pinus sylvestris L.,1,201200,1,,,,STOT,DB,84,kg,
+BIO2,Estonia,BI,EE02,SS,0111,,,5285637,Pinus sylvestris L.,1,201200,1,,,,TOC,DB,116085,kg,
+BIO2,Estonia,BI,EE02,SS,0111,,,5285637,Pinus sylvestris L.,1,201200,1,,,,ZN,DB,1,kg,
+BIO2,Estonia,BI,EE02,SS,0111,,,5285637,Pinus sylvestris L.,1,201200,1,,,,BIOM,IM,241.93,ton,
+BIO2,Estonia,BI,EE02,SS,0112,,,5284884,Picea abies (L.) H.Karst.,1,201200,1,,,,B,DB,0,kg,
+BIO2,Estonia,BI,EE02,SS,0112,,,5284884,Picea abies (L.) H.Karst.,1,201200,1,,,,CA,DB,338,kg,
+BIO2,Estonia,BI,EE02,SS,0112,,,5284884,Picea abies (L.) H.Karst.,1,201200,1,,,,CU,DB,1,kg,
+BIO2,Estonia,BI,EE02,SS,0112,,,5284884,Picea abies (L.) H.Karst.,1,201200,1,,,,FE,DB,22,kg,
+BIO2,Estonia,BI,EE02,SS,0112,,,5284884,Picea abies (L.) H.Karst.,1,201200,1,,,,K,DB,161,kg,
+BIO2,Estonia,BI,EE02,SS,0112,,,5284884,Picea abies (L.) H.Karst.,1,201200,1,,,,MG,DB,48,kg,
+BIO2,Estonia,BI,EE02,SS,0112,,,5284884,Picea abies (L.) H.Karst.,1,201200,1,,,,MN,DB,64,kg,
+BIO2,Estonia,BI,EE02,SS,0112,,,5284884,Picea abies (L.) H.Karst.,1,201200,1,,,,,DB,7,kg,
+BIO2,Estonia,BI,EE02,SS,0112,,,5284884,Picea abies (L.) H.Karst.,1,201200,1,,,,NTOT,DB,521,kg,
+BIO2,Estonia,BI,EE02,SS,0112,,,5284884,Picea abies (L.) H.Karst.,1,201200,1,,,,PTOT,DB,106,kg,
+BIO2,Estonia,BI,EE02,SS,0112,,,5284884,Picea abies (L.) H.Karst.,1,201200,1,,,,STOT,DB,7,kg,
+BIO2,Estonia,BI,EE02,SS,0112,,,5284884,Picea abies (L.) H.Karst.,1,201200,1,,,,TOC,DB,95986,kg,
+BIO2,Estonia,BI,EE02,SS,0112,,,5284884,Picea abies (L.) H.Karst.,1,201200,1,,,,ZN,DB,3,kg,
+BIO2,Estonia,BI,EE02,SS,0112,,,5284884,Picea abies (L.) H.Karst.,1,201200,1,,,,BIOM,IM,199.97,ton,

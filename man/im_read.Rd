@@ -24,8 +24,9 @@ chemistry. See \link{im_subprogrammes} for the full list.}
 \item{sites}{Optional character vector of site codes (the \code{AREA} column),
 e.g. \code{c("SE14", "SE15")}. Case-insensitive.}
 
-\item{countries}{Optional character vector of two-letter ISO country codes,
-e.g. \code{"SE"}.}
+\item{countries}{Optional character vector of countries, given either as
+the two-letter ISO code that prefixes \code{AREA} (\code{"SE"}) or as the full name
+as it appears in \code{COUNTRY} (\code{"Sweden"}). Case-insensitive.}
 
 \item{years}{Optional numeric vector of years to keep, e.g. \code{2000:2019}.}
 
@@ -48,12 +49,16 @@ the file exactly as published. Under \code{"auto"}, blank codes found in a
 version that should not have them are reported rather than assumed to be
 sodium.}
 
-\item{quiet}{Logical. Suppress progress and one-time notes.}
+\item{quiet}{Logical. Suppress progress and one-time notes. It does not
+silence the warning raised when a filter matches nothing, which is a
+diagnostic rather than progress; use \code{\link[=suppressWarnings]{suppressWarnings()}} for that.}
 
 \item{version}{Dataset version. Defaults to \code{\link[=im_version]{im_version()}}.}
 }
 \value{
 A \link[tibble:tibble]{tibble} with one row per published observation.
+A filter that matches nothing returns an empty table and warns, rather
+than leaving you to work out which argument was wrong.
 }
 \description{
 Downloads (if needed), caches, reads and tidies one subprogramme of the ICP
@@ -64,8 +69,8 @@ IM open dataset. This is the main entry point of the package.
 \item \strong{Types every column explicitly.} \code{SCODE} keeps its leading zeros;
 \code{VALUE} is numeric; nothing is guessed.
 \item \strong{Corrects the sodium code on read.} A known issue affecting \strong{version 1
-only}: the substance code for sodium is blank in 48,441 rows across
-twelve subprogrammes, the literal string \code{"NA"} having been consumed as a
+only}: the substance code for sodium is blank in 48,444 rows across
+thirteen subprogrammes, the literal string \code{"NA"} having been consumed as a
 missing value before publication. It is corrected in version 2 onwards.
 By default this is put right on read for version 1 and left alone
 afterwards; see the \code{repair} argument.

@@ -60,7 +60,7 @@ read.csv(text = "SUBST,VALUE\nNA,2.4\nCL,4.4")$SUBST
 
 The same thing happened once before publication, and is a known issue
 affecting **version 1 of the dataset only**: sodium's code arrives blank in
-48,441 rows across twelve subprogrammes. It is corrected from version 2
+48,444 rows across thirteen subprogrammes. It is corrected from version 2
 onwards, and `icpim` corrects it on read. The default `repair = "auto"`
 applies the correction to version 1 and leaves later versions untouched, so
 scripts keep working across the change.

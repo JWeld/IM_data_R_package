@@ -23,6 +23,11 @@ if (nzchar(Sys.getenv("ICPIM_VERSION"))) {
 }
 version <- im_version()
 
+# SCODE is a zero-padded four-digit station code (ICP IM Manual, section
+# 4.3.1). A code of any other width means the leading zeros were lost, or the
+# field changed shape in this release.
+SCODE_WIDTH <- 4L
+
 problems <- character()
 note <- function(...) problems <<- c(problems, paste0(...))
 
@@ -73,8 +78,8 @@ for (sp in man$subprog) {
   if (!is.numeric(x$VALUE)) note(sp, ": VALUE is ", class(x$VALUE)[1])
   if ("SCODE" %in% names(x)) {
     if (!is.character(x$SCODE)) note(sp, ": SCODE is ", class(x$SCODE)[1])
-    bad <- unique(x$SCODE[nchar(x$SCODE) != 4])
-    if (length(bad)) note(sp, ": SCODE not 4 chars: ", paste(head(bad, 5), collapse = ","))
+    bad <- unique(x$SCODE[nchar(x$SCODE) != SCODE_WIDTH])
+    if (length(bad)) note(sp, ": SCODE not ", SCODE_WIDTH, " chars: ", paste(head(bad, 5), collapse = ","))
   }
 
   undec <- unique(x[[key]][!is.na(x[[key]]) & is.na(x[[dec]])])

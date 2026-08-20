@@ -16,14 +16,21 @@ First release.
 
 * **Sodium's substance code is corrected on read.** The ICP IM code for sodium
   is the literal string `"NA"`, and a known issue affecting **version 1 of the
-  dataset only** leaves it blank in 48,441 rows across twelve subprogrammes.
+  dataset only** leaves it blank in 48,444 rows across thirteen subprogrammes.
   It is corrected in the data itself from version 2 onwards.
   `im_read(repair = "auto")`, the default, applies the correction to version 1
   and leaves later versions untouched, so scripts survive the change; `TRUE`
   forces it and `FALSE` returns the file exactly as published. A file that
   already carries the code is passed through unchanged whatever the setting,
   and blank codes appearing in a version that should not have them are
-  reported rather than assumed to be sodium.
+  reported rather than assumed to be sodium. The correction covers both code
+  columns: sodium is measured in tree biomass too, where the determinand
+  column is `PARAM`, and three rows of `BI` carry the blank there. The total
+  restored, 48,444, matches the producing script's own count exactly.
+* Tables published without a column that is empty throughout a subprogramme
+  are handled: the producer prunes such columns, so the column set varies
+  between subprogrammes and between releases. `im_units()` now says which
+  column is missing instead of failing with a tidy-select error.
 * Every column is typed explicitly rather than guessed, so `SCODE` keeps its
   leading zeros.
 * `YYYYMM` is parsed to `date`, `year` and `month`. Annual values published
@@ -49,6 +56,15 @@ First release.
   the columns that vary within the colliding keys - usually `DETER`, the same
   sample analysed by two methods - and reports what fraction of rows is
   affected.
+* Filters report rather than empty the table in silence. `sites`, `countries`,
+  `years`, `substances` and `stat` each warn when they match nothing, naming
+  what was asked for and what the subprogramme actually holds - a typo used to
+  be indistinguishable from the data genuinely having none. The warning is a
+  diagnostic, so `quiet = TRUE` does not silence it; use `suppressWarnings()`.
+* `countries` accepts the full country name as it appears in `COUNTRY`
+  (`"Sweden"`) as well as the ISO code that prefixes `AREA` (`"SE"`). Only the
+  code worked before, so filtering on the value visible in the data returned
+  nothing.
 * `im_units()` reports determinands published in more than one unit.
 * `im_detection_limit()` makes the treatment of below-detection values
   explicit.

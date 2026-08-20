@@ -29,6 +29,10 @@ and precipitation, carrying all of \code{X}, \code{A}, \code{Z}, \code{XA}, \cod
 so the same key appears five times over.
 \item \code{sample_BB.csv} - the complete bird subprogramme, 71 rows, every one of
 them an annual value published with month \code{00}.
+\item \code{sample_BI.csv} - tree bioelements, the three sampling occasions carrying
+the version 1 sodium issue in \code{PARAM} rather than \code{SUBST}. Sodium is
+measured in tree biomass too, so the blank code is not confined to the
+chemistry subprogrammes.
 }
 }
 \examples{

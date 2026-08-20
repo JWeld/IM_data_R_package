@@ -19,6 +19,11 @@ im_api_dataset <- function(version = NULL) {
     sprintf("%s/%s/%s", IM_API_BASE, IM_DATASET_ID, version)
   }
 
+  # A version that is absent stays absent, so remember it and stop asking. A
+  # network failure is transient - a user who reconnects mid-session must not
+  # be stuck with a cached failure - so that is never remembered.
+  if (identical(the[[paste0(key, "_absent")]], TRUE)) return(NULL)
+
   raw <- tryCatch(curl::curl_fetch_memory(url), error = function(e) NULL)
   if (is.null(raw) || raw$status_code != 200L) return(NULL)
 
@@ -28,7 +33,10 @@ im_api_dataset <- function(version = NULL) {
   )
   # The API answers 200 with a null body for a version that does not exist,
   # so the status code alone does not tell you whether it is there.
-  if (is.null(js) || is.null(js$dataset) || !length(js$dataset)) return(NULL)
+  if (is.null(js) || is.null(js$dataset) || !length(js$dataset)) {
+    the[[paste0(key, "_absent")]] <- TRUE
+    return(NULL)
+  }
 
   the[[key]] <- js$dataset
   js$dataset

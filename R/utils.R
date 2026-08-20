@@ -51,7 +51,14 @@ known_subprogs <- function(version = im_version()) {
     error = function(e) NULL
   ))
   if (is.null(man) || !nrow(man)) return(meta)
-  man[!is.na(man$subprog), c("subprog", "name", "file")]
+  man <- man[!is.na(man$subprog), c("subprog", "name", "file")]
+  # Same columns whichever branch we came down, so a caller cannot read a
+  # column that happens to exist only for the bundled version. A subprogramme
+  # new in this release gets NA rather than a missing column.
+  i <- match(man$subprog, meta$subprog)
+  man$collection <- meta$collection[i]
+  man$key        <- meta$key[i]
+  man[, names(meta)]
 }
 
 # The published file name for a subprogramme in a given release.
