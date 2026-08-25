@@ -210,5 +210,5 @@ im_file_url <- function(file, type = c("data", "documentation"),
 #' @examples
 #' im_version()
 im_version <- function() {
-  as.character(getOption("icpim.version", "1"))
+  as.character(getOption("icpim.version", IM_DEFAULT_VERSION))
 }

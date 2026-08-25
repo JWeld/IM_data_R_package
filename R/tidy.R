@@ -52,7 +52,7 @@ im_widen <- function(x,
   keys <- x[, c(id_cols, names_from), drop = FALSE]
   dup <- sum(duplicated(keys))
   if (dup > 0 && is.null(values_fn)) {
-    culprits <- varying_within_duplicates(x, keys)
+    culprits <- varying_within_duplicates(x, keys, values_from)
     pct <- signif(100 * dup / nrow(x), 2)
     cli::cli_abort(c(
       "{dup} duplicate key{?s} ({pct}% of rows) would collapse silently.",
@@ -82,7 +82,7 @@ im_widen <- function(x,
 # DETER/PRETRE - the same sample analysed by two methods - so naming them
 # turns a blocking error into an actionable one. Computed only on the
 # duplicated rows, which are typically a fraction of a percent.
-varying_within_duplicates <- function(x, keys) {
+varying_within_duplicates <- function(x, keys, values_from = "VALUE") {
   dup <- duplicated(keys) | duplicated(keys, fromLast = TRUE)
   if (!any(dup)) return(character())
   sub <- x[dup, , drop = FALSE]
@@ -91,7 +91,7 @@ varying_within_duplicates <- function(x, keys) {
   # alongside it, which would otherwise name every cause twice.
   decoded <- c("substance", "parameter", "determination", "pretreatment",
                "stat", "quality")
-  candidates <- setdiff(names(sub), c(names(keys), "VALUE", decoded))
+  candidates <- setdiff(names(sub), c(names(keys), values_from, decoded))
   varies <- vapply(candidates, function(cn) {
     v <- sub[[cn]]
     if (all(is.na(v))) return(FALSE)
@@ -166,6 +166,13 @@ im_detection_limit <- function(x, action = c("half", "drop", "na", "keep"),
   if (!"FLAGQUA" %in% names(x)) {
     cli::cli_warn("No {.field FLAGQUA} column; nothing to do.")
     return(x)
+  }
+  if (!"VALUE" %in% names(x)) {
+    cli::cli_abort(c(
+      "No {.field VALUE} column in this table, so there is nothing to adjust.",
+      "i" = "Columns empty throughout a subprogramme are not published, so the
+             column set differs between subprogrammes and between releases."
+    ))
   }
   below <- !is.na(x$FLAGQUA) & x$FLAGQUA == "L"
   x <- switch(action,

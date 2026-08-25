@@ -144,10 +144,12 @@ im_read <- function(subprog,
   # nothing is nearly always a typo or the wrong vocabulary, and finding that
   # out from a zero-row result costs an afternoon.
   if (!is.null(sites)) {
+    require_col(out, "AREA", "sites")
     keep <- toupper(out$AREA) %in% toupper(sites)
     out <- filter_rows(out, keep, "sites", sites, out$AREA)
   }
   if (!is.null(countries)) {
+    require_col(out, "AREA", "countries")
     cc <- toupper(countries)
     # AREA carries the ISO code; COUNTRY carries the full name. Accept either,
     # since the full name is what a reader sees in the data.
@@ -158,11 +160,13 @@ im_read <- function(subprog,
                        unique(c(substr(out$AREA, 1, 2), out$COUNTRY)))
   }
   if (!is.null(years)) {
+    require_col(out, "year", "years")
     keep <- !is.na(out$year) & out$year %in% years
     out <- filter_rows(out, keep, "years", years, out$year)
   }
   if (!is.null(substances)) {
     key <- im_key_col(out)
+    require_col(out, key, "substances")
     keep <- !is.na(out[[key]]) & out[[key]] %in% substances
     out <- filter_rows(out, keep, "substances", substances, out[[key]])
   }
@@ -173,7 +177,7 @@ im_read <- function(subprog,
   if (isTRUE(decode)) out <- im_decode(out, quiet = quiet, version = version)
 
   # Nudge on FLAGSTA once per session, only when it actually bites.
-  if (!quiet && !the$warned_flagsta && "FLAGSTA" %in% names(out) &&
+  if (!quiet && !isTRUE(the$warned_flagsta) && "FLAGSTA" %in% names(out) &&
       is.null(stat) && has_mixed_stats(out)) {
     the$warned_flagsta <- TRUE
     cli::cli_alert_info(c(
@@ -258,7 +262,7 @@ im_read_file <- function(path, repair = TRUE, quiet = TRUE) {
     n_blank <- n_blank + n
     if (isTRUE(repair)) raw[[col]][blank] <- "NA"
   }
-  if (isTRUE(repair) && n_blank > 0 && !quiet && !the$warned_sodium) {
+  if (isTRUE(repair) && n_blank > 0 && !quiet && !isTRUE(the$warned_sodium)) {
     the$warned_sodium <- TRUE
     cli::cli_alert_info(c(
       "Restored the sodium code in {n_blank} row{?s} ",
@@ -328,6 +332,21 @@ im_add_dates <- function(x) {
 # Which column holds the measured quantity for this subprogramme.
 im_key_col <- function(x) {
   if ("SUBST" %in% names(x)) "SUBST" else "PARAM"
+}
+
+# A filter needs the column it filters on. Without this the subscript is
+# length zero and the failure surfaces as "Logical subscript must be size 1 or
+# N", which says nothing about the cause. The published column set varies
+# between subprogrammes and releases, so name the column instead.
+require_col <- function(x, col, arg) {
+  if (!col %in% names(x)) {
+    cli::cli_abort(c(
+      "{.arg {arg}} filters on {.field {col}}, which this table has not got.",
+      "i" = "The published column set differs between subprogrammes and
+             between releases."
+    ), call = NULL)
+  }
+  invisible(TRUE)
 }
 
 # Apply a filter, and say so if it removed everything. `available` is what the

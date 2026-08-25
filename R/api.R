@@ -4,8 +4,18 @@
 # the package, so that a new annual release needs no code change. The bundled
 # tables are a fallback for working offline, not the source of truth.
 
-# Which dataset version the bundled tables were built from. Anything else is
-# fetched.
+# Two version constants that are easy to confuse, so they sit together.
+#
+# IM_DEFAULT_VERSION is the release a session reads unless the user pins
+# another with options(icpim.version=). It is the only place the default is
+# written: .onLoad sets the option from it and im_version() falls back to it.
+#
+# IM_BUNDLED_VERSION is the release the bundled code lists were built from.
+# The two are normally equal, and data-raw/make_data.R stamps the data so a
+# test catches them drifting - but they are distinct, because pinning a newer
+# release than the bundled lists is exactly the case warn_code_fallback()
+# reports.
+IM_DEFAULT_VERSION <- "1"
 IM_BUNDLED_VERSION <- "1"
 
 # One API call per version per session.

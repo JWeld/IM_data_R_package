@@ -120,6 +120,30 @@ this package, so an ordinary release needs no code change:
   `data-raw/verify_release.R` against it, and opens an issue if either the
   release is new or verification fails.
 
+## Hardening
+
+Five failures reported against the first working version. None was reachable
+with the published files as they stand - every one of the 21 carries `AREA`,
+`YYYYMM`, `VALUE` and `UNIT` - so these guard against a release whose column
+set differs, or a session whose state does.
+
+* `im_detection_limit()` errors naming the missing column when a table has no
+  `VALUE`, matching `im_units()`. It used to return the table unchanged behind
+  a bare tibble warning, which reads as "nothing was below detection".
+* Filters name the column they need when it is absent. Without `AREA` or
+  `year` the subscript was length zero and the failure surfaced as "Logical
+  subscript `keep` must be size 1 or N", which says nothing about the cause.
+* The default dataset version is written once, as `IM_DEFAULT_VERSION`. It was
+  in three places, and `im_version()`'s fallback was unreachable because
+  `.onLoad` always sets the option - so a maintainer could edit it and see no
+  effect. The `dataset-watch` issue template named that unreachable edit; it
+  now names the constants that work, and says why step 3 without step 2 fails.
+* The warn-once guards are initialised by `.onLoad` as well as at build, and
+  read with `isTRUE()`. An absent flag is not `FALSE`: `!NULL` has length zero,
+  which errors inside `&&` rather than warning.
+* The duplicate-key report honours `values_from`, so a non-default pivot no
+  longer names its own value column as a culprit.
+
 ## Data
 
 * `im_subprogrammes`, `im_sites`, `im_substances`, `im_parameters`,

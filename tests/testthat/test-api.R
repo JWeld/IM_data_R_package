@@ -43,8 +43,10 @@ test_that("an unreachable repository falls back rather than failing", {
 test_that("falling back to another release's code lists is not silent", {
   withr::local_options(icpim.cache_dir = withr::local_tempdir())
   local_mocked_bindings(im_update_codes = function(...) invisible(NULL))
-  # Clear the once-per-session guards so the warning can fire.
-  rm(list = ls(the, all.names = TRUE), envir = the)
+  # Clear the once-per-session guards so the warning can fire. Resetting is
+  # not the same as emptying: an absent flag is not FALSE.
+  rm(list = grep("^codes_", ls(the, all.names = TRUE), value = TRUE), envir = the)
+  reset_session_state()
 
   expect_warning(
     out <- codes_for("substances", "99"),
