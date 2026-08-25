@@ -99,17 +99,24 @@ therefore needs no update to this package.
 
 ## Citation
 
-The data are CC BY 4.0 and require attribution: `im_cite()` prints the
-citation for the dataset. Note that this is not the same as `citation("icpim")` 
-which gives the citation for this R package.
+Publishing work that uses these data means citing two things, and `im_cite()`
+prints both. The data are CC BY 4.0, so attribution is required.
+The **data paper** comes first: it is the peer-reviewed
+description of the dataset and is what the literature cites.
+
+> Weldon, J. et al. (2026). A long-term ecosystem monitoring dataset from the
+> ICP Integrated Monitoring network: biogeochemical data from 1977-2020 across
+> 14 European countries. *Scientific Data* 13.
+> <https://doi.org/10.1038/s41597-026-07181-8>
+
+The deposit DOI follows, identifying the particular annual release analysed:
 
 > Weldon, J. et al. (2026). The International Cooperative Programme on
 > Integrated Monitoring of Air Pollution Effects on Ecosystems (ICP IM),
-> version 1. Swedish University of Agricultural Sciences.
+> version 1. ICP Integrated Monitoring Programme Centre.
 > <https://doi.org/10.5878/z376-2m63>
 
-The accompanying data paper is in *Scientific Data* 13 (2026),
-[doi:10.1038/s41597-026-07181-8](https://doi.org/10.1038/s41597-026-07181-8).
+Neither is the citation for this R package, which is `citation("icpim")`. 
 
 Some data are withheld at the data owners' request and are available from the
 ICP IM Programme Centre (`im-database@slu.se`), who can also advise on best

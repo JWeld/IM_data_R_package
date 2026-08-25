@@ -97,6 +97,15 @@ this package, so an ordinary release needs no code change:
   established they report `NA` and say so, rather than returning the DOI of a
   different release: citing the wrong version is worse than admitting the
   value is unknown.
+* `im_cite()` leads with the data paper, which is the citation to give, and
+  follows it with the deposit DOI for the release analysed. The paper was
+  previously presented as an optional extra after the deposit. If a version's
+  DOI cannot be resolved the paper is still printed, since it does not depend
+  on which release was read.
+* The deposit is attributed to the ICP Integrated Monitoring Programme Centre,
+  which produces the data, rather than to the university that hosts the
+  repository record. The repository's own `principal` field names the host, so
+  the attribution is fixed rather than read from the API.
 * `im_provenance()` reports the dataset version, DOI, file, download time and
   package version behind an object from `im_read()`. The record is attached to
   the data because the package version cannot stand in for it: `icpim.version`
@@ -118,4 +127,4 @@ this package, so an ordinary release needs no code change:
 * `im_flags` records all ten `FLAGSTA` codes. The deposit's `README.txt` lists
   five; `A`, `Z`, `XA`, `XZ` and `SZ` are defined in the AM section of the ICP
   IM Manual and occur in 36,522 rows.
-* `im_example()` gives three small real extracts for offline use.
+* `im_example()` gives four small real extracts for offline use.

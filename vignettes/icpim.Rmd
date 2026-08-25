@@ -243,11 +243,20 @@ adding new ones, so moving would change the numbers an existing analysis
 returns. Move deliberately with `options(icpim.version = "2")`. The cache is
 keyed by version, so files from two releases are never mixed.
 
-The data are CC BY 4.0, which requires attribution:
+## Citing this work
+
+Cite the **data paper** - the peer-reviewed description of the dataset, and
+what the literature cites - together with the deposit DOI for the release you
+analysed. `im_cite()` prints both, in that order:
 
 ```{r}
 im_cite()
 ```
+
+The paper alone does not say which annual release produced your numbers; the
+deposit DOI alone gives the reader nothing to read. Neither is the citation
+for this package, which is `citation("icpim")`. The data are CC BY 4.0, so
+attribution is required.
 
 ## Where files are stored
 

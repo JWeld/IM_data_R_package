@@ -2,7 +2,7 @@
 % Please edit documentation in R/manifest.R
 \name{im_cite}
 \alias{im_cite}
-\title{Cite the ICP IM dataset}
+\title{Cite ICP IM}
 \usage{
 im_cite(version = im_version())
 }
@@ -14,14 +14,20 @@ The citation, invisibly, as a character vector. Called for its
 side effect of printing.
 }
 \description{
-The dataset is published under CC BY 4.0, which requires attribution. This
-prints the citation for the data itself, which is \emph{not} the same as the
-citation for this package (see \code{citation("icpim")}).
+Prints the citation to give when you publish work using these data. The
+\strong{data paper} comes first: it describes the dataset as a whole, is
+peer-reviewed, and is what the literature cites. The deposit DOI follows,
+identifying the particular version you analysed.
 }
 \details{
-The citation is for the version being read, since each release has its own
-DOI. If that version's DOI cannot be established, this says so instead of
-printing a citation that points at the wrong release.
+Give both. The paper alone does not say which annual release produced your
+numbers; the deposit DOI alone gives the reader nothing to read. Neither is
+the citation for this package, which is \code{citation("icpim")}.
+
+The deposit citation follows \code{\link[=im_version]{im_version()}}, since each release has its own
+DOI. If that version's DOI cannot be established, the paper is still printed
+and the deposit line says what is missing, rather than pointing at the wrong
+release.
 }
 \examples{
 im_cite()

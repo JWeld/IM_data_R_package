@@ -25,14 +25,37 @@ test_that("an unresolvable version yields NA, never another version's DOI", {
   expect_equal(info$version, "99")
 })
 
-test_that("citing an unresolvable version says so rather than citing v1", {
+test_that("an unresolvable version still yields the paper citation", {
   withr::local_options(icpim.version = "99")
   local_mocked_bindings(im_api_dataset = function(version = NULL) NULL)
 
-  txt <- capture.output(cite <- im_cite())
-  expect_match(paste(txt, collapse = " "), "Cannot cite version 99")
-  # The wrong DOI must not appear anywhere in the output.
+  txt <- capture.output(im_cite())
+  one <- paste(txt, collapse = " ")
+  # The paper does not depend on which release was read, so it is still given.
+  expect_match(one, "Scientific Data")
+  expect_match(one, "10.1038/s41597-026-07181-8", fixed = TRUE)
+  # The deposit line says what is missing rather than naming another release.
+  expect_match(one, "version 99 is not known")
   expect_false(any(grepl("z376-2m63", txt, fixed = TRUE)))
+})
+
+test_that("the data paper is given before the deposit", {
+  withr::local_options(icpim.version = "1")
+  txt <- capture.output(im_cite())
+  paper   <- grep("Scientific Data", txt)[1]
+  deposit <- grep("z376-2m63", txt)[1]
+  expect_true(paper < deposit)
+  # And it is introduced as the thing to cite, not as an afterthought.
+  expect_match(txt[1], "Cite the data paper")
+})
+
+test_that("the deposit is attributed to the programme, not the host university", {
+  withr::local_options(icpim.version = "1")
+  one <- paste(capture.output(im_cite()), collapse = " ")
+  expect_match(one, "ICP Integrated Monitoring Programme Centre", fixed = TRUE)
+  expect_no_match(one, "Swedish University of Agricultural Sciences", fixed = TRUE)
+  expect_equal(im_dataset_info()$publisher,
+               "ICP Integrated Monitoring Programme Centre")
 })
 
 test_that("the citation names the version being read", {
@@ -59,5 +82,7 @@ test_that("metadata pulled from the API agrees with the bundled constants", {
   expect_equal(info$doi, "10.5878/z376-2m63")
   expect_equal(info$version, "1")
   expect_equal(info$year, "2026")
-  expect_equal(info$publisher, "Swedish University of Agricultural Sciences")
+  # The API names SLU as the record's principal; the citation attributes the
+  # programme that produces the data, so this must not follow the API.
+  expect_equal(info$publisher, "ICP Integrated Monitoring Programme Centre")
 })

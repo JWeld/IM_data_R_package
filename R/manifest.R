@@ -8,6 +8,29 @@ IM_DOI_V1      <- "10.5878/z376-2m63"
 IM_DOI_CONCEPT <- "10.5878/x6fn-gw26"
 IM_DATASET_ID  <- "2024-180"
 
+# The dataset is produced by the programme, not by the university that hosts
+# the deposit record. The repository lists SLU as the record's principal, which
+# is an administrative fact about the deposit rather than the attribution the
+# data should carry, so the publisher here is fixed rather than read from the
+# API.
+IM_PUBLISHER <- "ICP Integrated Monitoring Programme Centre"
+
+# The data paper. This is the citation to give: it describes the dataset as a
+# whole and is what the literature will cite. The deposit DOI identifies the
+# particular version analysed and accompanies it.
+IM_PAPER <- list(
+  authors = "Weldon, J. et al.",
+  year    = "2026",
+  title   = paste(
+    "A long-term ecosystem monitoring dataset from the ICP Integrated",
+    "Monitoring network: biogeochemical data from 1977-2020 across",
+    "14 European countries"
+  ),
+  journal = "Scientific Data",
+  volume  = "13",
+  doi     = "10.1038/s41597-026-07181-8"
+)
+
 # Facts about version 1, so citing the pinned version works offline.
 IM_V1_INFO <- list(
   title = paste(
@@ -17,7 +40,7 @@ IM_V1_INFO <- list(
   doi       = IM_DOI_V1,
   version   = "1",
   year      = "2026",
-  publisher = "Swedish University of Agricultural Sciences",
+  publisher = IM_PUBLISHER,
   licence   = "CC BY 4.0"
 )
 
@@ -67,7 +90,7 @@ im_doi <- function(version = im_version(), concept = FALSE) {
 #' @export
 im_dataset_info <- function(version = im_version()) {
   version <- as.character(version)
-  paper <- "https://doi.org/10.1038/s41597-026-07181-8"
+  paper <- paste0("https://doi.org/", IM_PAPER$doi)
 
   base <- if (identical(version, IM_BUNDLED_VERSION)) {
     IM_V1_INFO
@@ -76,7 +99,7 @@ im_dataset_info <- function(version = im_version()) {
     if (is.null(d)) {
       # Unknown rather than wrong.
       list(title = IM_V1_INFO$title, doi = NA_character_, version = version,
-           year = NA_character_, publisher = IM_V1_INFO$publisher,
+           year = NA_character_, publisher = IM_PUBLISHER,
            licence = IM_V1_INFO$licence)
     } else {
       list(
@@ -84,7 +107,7 @@ im_dataset_info <- function(version = im_version()) {
         doi       = as.character(d$doi),
         version   = as.character(d$versionNumber),
         year      = substr(as.character(d$publishedDate), 1, 4),
-        publisher = d$principal$name$en %||% IM_V1_INFO$publisher,
+        publisher = IM_PUBLISHER,
         licence   = IM_V1_INFO$licence
       )
     }
@@ -98,15 +121,19 @@ im_dataset_info <- function(version = im_version()) {
   ))
 }
 
-#' Cite the ICP IM dataset
+#' Cite ICP IM
 #'
-#' The dataset is published under CC BY 4.0, which requires attribution. This
-#' prints the citation for the data itself, which is *not* the same as the
-#' citation for this package (see `citation("icpim")`).
+#' Prints the citation to give when you publish work using these data. The
+#' **data paper** comes first: it describes the dataset as a whole, is
+#' peer-reviewed, and is what the literature cites. The deposit DOI follows,
+#' identifying the particular version you analysed.
 #'
-#' The citation is for the version being read, since each release has its own
-#' DOI. If that version's DOI cannot be established, this says so instead of
-#' printing a citation that points at the wrong release.
+#' Neither is the citation for this package, which is `citation("icpim")`.
+#'
+#' The deposit citation follows [im_version()], since each release has its own
+#' DOI. If that version's DOI cannot be established, the paper is still printed
+#' and the deposit line says what is missing, rather than pointing at the wrong
+#' release.
 #'
 #' @param version Dataset version. Defaults to [im_version()].
 #'
@@ -118,33 +145,39 @@ im_dataset_info <- function(version = im_version()) {
 im_cite <- function(version = im_version()) {
   info <- im_dataset_info(version)
 
-  if (is.na(info$doi)) {
-    txt <- c(
-      paste0("Cannot cite version ", version, ": its DOI is not known here."),
-      paste0("Only version ", IM_BUNDLED_VERSION,
-             " is known offline; the rest are looked up in the repository."),
-      "Connect to the network and try again, or take the DOI from",
-      paste0("https://doi.org/", IM_DOI_CONCEPT, ", which resolves to the newest release.")
-    )
-    cat(txt, sep = "\n")
-    return(invisible(txt))
+  wrap <- function(x) strwrap(x, width = 76, indent = 2, exdent = 4)
+
+  paper <- wrap(paste0(
+    IM_PAPER$authors, " (", IM_PAPER$year, "). ", IM_PAPER$title, ". ",
+    IM_PAPER$journal, " ", IM_PAPER$volume,
+    ". https://doi.org/", IM_PAPER$doi
+  ))
+
+  deposit <- if (is.na(info$doi)) {
+    wrap(paste0(
+      "The DOI for version ", version, " is not known here, so it cannot be ",
+      "cited. Only version ", IM_BUNDLED_VERSION, " is known offline. ",
+      "Connect to the network and try again, or take the DOI from ",
+      "https://doi.org/", IM_DOI_CONCEPT, ", which resolves to the newest release."
+    ))
+  } else {
+    wrap(paste0(
+      IM_PAPER$authors, " (", info$year, "). ", info$title,
+      ", version ", info$version, ". ", info$publisher,
+      ". https://doi.org/", info$doi
+    ))
   }
 
   txt <- c(
-    paste0(
-      "Weldon, J. et al. (", info$year, "). ", info$title,
-      ", version ", info$version, ". ", info$publisher,
-      ". https://doi.org/", info$doi
-    ),
+    "Cite the data paper:",
     "",
-    paste0(
-      "Accompanying paper: A long-term ecosystem monitoring dataset from the ",
-      "ICP Integrated Monitoring network: biogeochemical data from 1977-2020 ",
-      "across 14 European countries. Scientific Data 13 (2026). ",
-      info$paper
-    ),
+    paper,
     "",
-    "Licensed CC BY 4.0. Attribution is required.",
+    "and the dataset version analysed:",
+    "",
+    deposit,
+    "",
+    paste0("The data are ", info$licence, "; attribution is required."),
     "For the package itself, see citation(\"icpim\")."
   )
   cat(txt, sep = "\n")
