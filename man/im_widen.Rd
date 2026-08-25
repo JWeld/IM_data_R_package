@@ -45,10 +45,6 @@ Units are dropped from the value columns because they vary between rows.
 Check them first with \code{\link[=im_units]{im_units()}} and convert if needed.
 }
 \examples{
-\donttest{
-if (curl::has_internet()) {
-  pc <- im_read("PC", sites = "SE14", years = 2015:2019)
-  im_widen(pc)
-}
-}
+pc <- im_read_file(im_example("sample_PC.csv")) |> im_decode()
+im_widen(pc)
 }

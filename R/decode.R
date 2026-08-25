@@ -36,12 +36,8 @@
 #'   `stat` and `quality`.
 #' @export
 #' @examples
-#' \donttest{
-#' if (curl::has_internet()) {
-#'   raw <- im_read("MC", decode = FALSE)
-#'   im_decode(raw)
-#' }
-#' }
+#' raw <- im_read_file(im_example("sample_PC.csv"))
+#' im_decode(raw)
 im_decode <- function(x, quiet = TRUE, version = im_version()) {
   stopifnot(is.data.frame(x))
 

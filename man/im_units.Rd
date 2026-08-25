@@ -19,9 +19,5 @@ subprogramme: foliage chemistry, for instance, reports the same elements in
 both \code{mg/kg} and \code{ug/g}. Check this before pivoting or aggregating.
 }
 \examples{
-\donttest{
-if (curl::has_internet()) {
-  im_units(im_read("FC"))
-}
-}
+im_units(im_read_file(im_example("sample_PC.csv")))
 }

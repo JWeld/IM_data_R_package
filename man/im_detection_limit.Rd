@@ -29,10 +29,6 @@ Values below detection are published as the detection limit itself with
 dropping them biases downward. This makes the choice explicit.
 }
 \examples{
-\donttest{
-if (curl::has_internet()) {
-  pc <- im_read("PC", sites = "SE14")
-  im_detection_limit(pc, action = "half")
-}
-}
+pc <- im_read_file(im_example("sample_PC.csv"))
+im_detection_limit(pc, action = "half")
 }

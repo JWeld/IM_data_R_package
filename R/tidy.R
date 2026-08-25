@@ -25,12 +25,8 @@
 #' @return A wider tibble.
 #' @export
 #' @examples
-#' \donttest{
-#' if (curl::has_internet()) {
-#'   pc <- im_read("PC", sites = "SE14", years = 2015:2019)
-#'   im_widen(pc)
-#' }
-#' }
+#' pc <- im_read_file(im_example("sample_PC.csv")) |> im_decode()
+#' im_widen(pc)
 im_widen <- function(x,
                      names_from = NULL,
                      values_from = "VALUE",
@@ -63,7 +59,7 @@ im_widen <- function(x,
       "i" = "Add to {.arg id_cols} to keep them apart, or set {.arg values_fn}
              (e.g. {.code mean}) to combine them.",
       "i" = "In {.field AM} the usual cause is instead {.field FLAGSTA}:
-             filter with {.code stat=} first."
+             select one statistic, e.g. {.code subset(x, stat == \"mean\")}."
     ))
   }
 
@@ -112,11 +108,7 @@ varying_within_duplicates <- function(x, keys, values_from = "VALUE") {
 #'   determinand appearing more than once uses more than one unit.
 #' @export
 #' @examples
-#' \donttest{
-#' if (curl::has_internet()) {
-#'   im_units(im_read("FC"))
-#' }
-#' }
+#' im_units(im_read_file(im_example("sample_PC.csv")))
 im_units <- function(x) {
   stopifnot(is.data.frame(x))
   # The producer drops columns that are empty throughout a subprogramme, so the
@@ -153,12 +145,8 @@ im_units <- function(x) {
 #' @return A tibble.
 #' @export
 #' @examples
-#' \donttest{
-#' if (curl::has_internet()) {
-#'   pc <- im_read("PC", sites = "SE14")
-#'   im_detection_limit(pc, action = "half")
-#' }
-#' }
+#' pc <- im_read_file(im_example("sample_PC.csv"))
+#' im_detection_limit(pc, action = "half")
 im_detection_limit <- function(x, action = c("half", "drop", "na", "keep"),
                                estimated = FALSE) {
   action <- match.arg(action)

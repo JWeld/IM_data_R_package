@@ -29,7 +29,11 @@ refresh a cached copy, or to warm the cache before going offline.
 \examples{
 \donttest{
 if (curl::has_internet()) {
+  # A temporary cache, so the example leaves nothing behind. In normal use
+  # leave the default, which persists between sessions.
+  op <- options(icpim.cache_dir = tempfile())
   im_update_codes()
+  options(op)
 }
 }
 }

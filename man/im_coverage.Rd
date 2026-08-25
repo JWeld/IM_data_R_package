@@ -30,8 +30,13 @@ fetches the whole deposit (about 95 MB). Later calls read from the cache.
 \examples{
 \donttest{
 if (curl::has_internet()) {
+  # A temporary cache, so the example leaves nothing behind. In normal use
+  # leave the default, which persists between sessions.
+  op <- options(icpim.cache_dir = tempfile())
+
   # One small subprogramme
   im_coverage("MC")
+  options(op)
 }
 }
 }

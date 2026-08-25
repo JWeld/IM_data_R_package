@@ -6,7 +6,7 @@
 \alias{icpim-package}
 \title{icpim: Access the ICP Integrated Monitoring Open Data}
 \description{
-Download, cache and tidy the open dataset of the International Cooperative Programme on Integrated Monitoring of Air Pollution Effects on Ecosystems (ICP IM), published by the Swedish University of Agricultural Sciences at \doi{10.5878/z376-2m63}. The dataset holds long-term integrated ecosystem monitoring from forested catchments in 14 European countries, covering atmospheric chemistry, deposition, soil, soil water, groundwater, runoff, vegetation and biota. Functions resolve and cache the published files, read them with the correct column types, and decode the substance, parameter, determination and pretreatment code lists into readable names. Several encoding traps in the published files are handled explicitly, most importantly the substance code for sodium, which is the literal string "NA".
+Download, cache and tidy the open dataset of the International Cooperative Programme on Integrated Monitoring of Air Pollution Effects on Ecosystems (ICP IM), published at \doi{10.5878/z376-2m63} and described in Weldon et al. (2026) \doi{10.1038/s41597-026-07181-8}. It holds long-term integrated ecosystem monitoring from forested catchments in 14 European countries, covering atmospheric chemistry, deposition, soil, soil water, groundwater, runoff, vegetation and biota. Functions resolve and cache the published files, read them with the correct column types, and decode the substance, parameter, determination and pretreatment code lists into readable names. Several encoding traps in the published files are handled explicitly, most importantly the substance code for sodium, which is the literal string "NA".
 }
 \seealso{
 Useful links:

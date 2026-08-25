@@ -48,10 +48,6 @@ file, told apart only by \code{PARLIST}.
 }
 
 \examples{
-\donttest{
-if (curl::has_internet()) {
-  raw <- im_read("MC", decode = FALSE)
-  im_decode(raw)
-}
-}
+raw <- im_read_file(im_example("sample_PC.csv"))
+im_decode(raw)
 }

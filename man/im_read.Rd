@@ -98,17 +98,18 @@ Select on the \code{stat} column, or on \code{FLAGSTA} itself, before aggregatin
 \examples{
 \donttest{
 if (curl::has_internet()) {
-  # Precipitation chemistry at the four Swedish sites, this century:
-  pc <- im_read("PC", countries = "SE", years = 2000:2019)
-  head(pc)
+  # A temporary cache, so the example leaves nothing behind. In normal use
+  # leave the default, which persists between sessions.
+  op <- options(icpim.cache_dir = tempfile())
+
+  # Metal chemistry in mosses is the smallest subprogramme, ~14 kB:
+  mc <- im_read("MC", countries = "EE")
+  head(mc)
 
   # Sodium: the code really is the string "NA".
-  na <- im_read("PC", substances = "NA")
-  unique(na$substance)
+  unique(mc$substance[mc$SUBST == "NA"])
 
-  # Air temperature, then keep the monthly means rather than the extremes:
-  temp <- im_read("AM", substances = "TEMP")
-  means <- temp[temp$stat == "mean", ]
+  options(op)
 }
 }
 }
