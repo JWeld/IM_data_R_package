@@ -86,9 +86,12 @@ version 1 by default so scripts keep returning the same numbers; move
 deliberately with `options(icpim.version = "2")`. The cache is keyed by
 version, so releases are never mixed.
 
-Files are cached under `tools::R_user_dir("icpim", "cache")`. Set
+`im_read()` downloads what it needs, so it is the only function you need to
+get data. Files are cached under `tools::R_user_dir("icpim", "cache")`; set
 `options(icpim.cache_dir = "data-raw/icpim")` to keep an analysis
-self-contained, or run `im_download("all")` (about 95 MB) before going offline.
+self-contained. `im_download()` is for the cache rather than for data - it
+returns paths, not rows - and is worth knowing for one case: `im_download("all")`
+fetches all 21 files (about 95 MB) so you can work offline afterwards.
 
 `im_check_version()` tells you whether a newer release has appeared. The
 package never moves on its own, since that would change the numbers an

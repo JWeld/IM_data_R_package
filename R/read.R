@@ -86,7 +86,8 @@ IM_NUMERIC_COLS <- c(
 #'   A filter that matches nothing returns an empty table and warns, rather
 #'   than leaving you to work out which argument was wrong.
 #' @seealso [im_widen()] to pivot to one column per substance,
-#'   [im_subprogrammes] for what is available.
+#'   [im_subprogrammes] for what is available. [im_download()] only fills the
+#'   cache and returns paths; you do not need it before calling this.
 #' @export
 #' @examples
 #' \donttest{

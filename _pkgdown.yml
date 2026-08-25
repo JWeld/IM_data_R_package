@@ -3,11 +3,11 @@ template:
   bootstrap: 5
 reference:
 - title: Reading data
-  contents: [im_read, im_read_file, im_download, im_example]
+  contents: [im_read, im_read_file, im_example]
 - title: Decoding and tidying
   contents: [im_decode, im_codes, im_widen, im_units, im_detection_limit]
 - title: Cache and versions
-  contents: [im_cache_dir, im_cache_list, im_version, im_doi, im_cite,
+  contents: [im_download, im_cache_dir, im_cache_list, im_version, im_doi, im_cite,
              im_check_version, im_latest_version, im_manifest, im_coverage,
              im_update_codes, im_provenance]
 - title: Reference data

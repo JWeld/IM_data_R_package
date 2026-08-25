@@ -114,5 +114,6 @@ if (curl::has_internet()) {
 }
 \seealso{
 \code{\link[=im_widen]{im_widen()}} to pivot to one column per substance,
-\link{im_subprogrammes} for what is available.
+\link{im_subprogrammes} for what is available. \code{\link[=im_download]{im_download()}} only fills the
+cache and returns paths; you do not need it before calling this.
 }

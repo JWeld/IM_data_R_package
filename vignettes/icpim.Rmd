@@ -272,5 +272,11 @@ im_cache_clear() # remove it
 ```
 
 Set `options(icpim.cache_dir = "data-raw/icpim")` to keep an analysis
-self-contained, or `im_download("all")` to fetch everything (about 95 MB)
-before going offline.
+self-contained.
+
+You never have to download anything explicitly: `im_read()` fetches what it
+needs. `im_download()` exists for the cache rather than for data, and returns
+file paths rather than rows. The case worth remembering is
+`im_download("all")`, which fetches all 21 files (about 95 MB) in one go, so
+that later reads work with no network at all - `im_read()` cannot do that,
+since it takes one subprogramme at a time.

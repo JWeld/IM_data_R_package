@@ -2,7 +2,7 @@
 % Please edit documentation in R/download.R
 \name{im_download}
 \alias{im_download}
-\title{Download the published files for one or more subprogrammes}
+\title{Fill the cache without reading anything}
 \usage{
 im_download(subprog, overwrite = FALSE, quiet = NULL, version = im_version())
 }
@@ -17,14 +17,28 @@ im_download(subprog, overwrite = FALSE, quiet = NULL, version = im_version())
 \item{version}{Dataset version. Defaults to \code{\link[=im_version]{im_version()}}.}
 }
 \value{
-The local paths of the cached files, invisibly.
+The local paths of the cached files, invisibly. The data itself
+comes from \code{\link[=im_read]{im_read()}}.
 }
 \description{
-Fetches the CSV files from the repository into the cache. \code{\link[=im_read]{im_read()}} calls
-this for you, so you rarely need it directly; it is useful for warming the
-cache before going offline, or for fetching everything at once.
+\strong{To get data, use \code{\link[=im_read]{im_read()}}, not this.} \code{im_read()} downloads whatever
+it needs on its own, so \code{im_download("PC")} followed by \code{im_read("PC")} does
+nothing the second call would not have done alone.
 }
 \details{
+This is for managing the cache rather than obtaining data, and there are
+three things it does that \code{\link[=im_read]{im_read()}} cannot:
+\itemize{
+\item \strong{Fetch everything at once.} \code{im_read()} takes one subprogramme;
+\code{im_download("all")} fetches all 21 (about 95 MB), which is how you
+prepare to work offline. Reading them all instead would load 1.2 million
+rows into memory only to discard them.
+\item \strong{Replace a cached file.} \code{overwrite = TRUE} re-fetches one that is stale
+or damaged. \code{im_read()} will always prefer what is already cached.
+\item \strong{Give you the files, not the data.} It returns paths, so you can hand
+the CSVs to something that is not R without parsing them first.
+}
+
 Downloads are atomic: each file is written to a temporary path and only
 moved into place once complete, so an interrupted download cannot leave a
 truncated file that later looks cached.
@@ -32,8 +46,13 @@ truncated file that later looks cached.
 \examples{
 \donttest{
 if (curl::has_internet()) {
-  # Fetch one small subprogramme (~14 kB):
-  im_download("MC")
+  # Warm the cache; note that nothing is returned to work with.
+  im_download("MC")          # one small subprogramme, ~14 kB
+  mc <- im_read("MC")        # this is the call that gives you data
 }
 }
+}
+\seealso{
+\code{\link[=im_read]{im_read()}} to read a subprogramme, which downloads it for you;
+\code{\link[=im_cache_list]{im_cache_list()}} for what is already cached.
 }

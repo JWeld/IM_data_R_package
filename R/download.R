@@ -1,8 +1,20 @@
-#' Download the published files for one or more subprogrammes
+#' Fill the cache without reading anything
 #'
-#' Fetches the CSV files from the repository into the cache. [im_read()] calls
-#' this for you, so you rarely need it directly; it is useful for warming the
-#' cache before going offline, or for fetching everything at once.
+#' **To get data, use [im_read()], not this.** `im_read()` downloads whatever
+#' it needs on its own, so `im_download("PC")` followed by `im_read("PC")` does
+#' nothing the second call would not have done alone.
+#'
+#' This is for managing the cache rather than obtaining data, and there are
+#' three things it does that [im_read()] cannot:
+#'
+#' * **Fetch everything at once.** `im_read()` takes one subprogramme;
+#'   `im_download("all")` fetches all 21 (about 95 MB), which is how you
+#'   prepare to work offline. Reading them all instead would load 1.2 million
+#'   rows into memory only to discard them.
+#' * **Replace a cached file.** `overwrite = TRUE` re-fetches one that is stale
+#'   or damaged. `im_read()` will always prefer what is already cached.
+#' * **Give you the files, not the data.** It returns paths, so you can hand
+#'   the CSVs to something that is not R without parsing them first.
 #'
 #' Downloads are atomic: each file is written to a temporary path and only
 #' moved into place once complete, so an interrupted download cannot leave a
@@ -14,13 +26,17 @@
 #' @param quiet Logical. Suppress progress messages.
 #' @param version Dataset version. Defaults to [im_version()].
 #'
-#' @return The local paths of the cached files, invisibly.
+#' @return The local paths of the cached files, invisibly. The data itself
+#'   comes from [im_read()].
+#' @seealso [im_read()] to read a subprogramme, which downloads it for you;
+#'   [im_cache_list()] for what is already cached.
 #' @export
 #' @examples
 #' \donttest{
 #' if (curl::has_internet()) {
-#'   # Fetch one small subprogramme (~14 kB):
-#'   im_download("MC")
+#'   # Warm the cache; note that nothing is returned to work with.
+#'   im_download("MC")          # one small subprogramme, ~14 kB
+#'   mc <- im_read("MC")        # this is the call that gives you data
 #' }
 #' }
 im_download <- function(subprog, overwrite = FALSE, quiet = NULL,
