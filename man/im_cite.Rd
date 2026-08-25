@@ -20,9 +20,7 @@ peer-reviewed, and is what the literature cites. The deposit DOI follows,
 identifying the particular version you analysed.
 }
 \details{
-Give both. The paper alone does not say which annual release produced your
-numbers; the deposit DOI alone gives the reader nothing to read. Neither is
-the citation for this package, which is \code{citation("icpim")}.
+Neither is the citation for this package, which is \code{citation("icpim")}.
 
 The deposit citation follows \code{\link[=im_version]{im_version()}}, since each release has its own
 DOI. If that version's DOI cannot be established, the paper is still printed

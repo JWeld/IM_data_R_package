@@ -17,17 +17,16 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: James Weldon \email{weldondesign@gmail.com}
+\strong{Maintainer}: James Weldon \email{weldondesign@gmail.com} [copyright holder]
 
 Authors:
 \itemize{
-  \item James Weldon \email{weldondesign@gmail.com}
+  \item James Weldon \email{weldondesign@gmail.com} [copyright holder]
 }
 
 Other contributors:
 \itemize{
-  \item ICP Integrated Monitoring Programme Centre (Data collection and curation) [data contributor]
-  \item Swedish University of Agricultural Sciences (Publisher of the underlying dataset) [copyright holder]
+  \item ICP Integrated Monitoring Programme Centre (Collects and curates the monitoring data this package reads) [data contributor]
 }
 
 }

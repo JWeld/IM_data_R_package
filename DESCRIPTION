@@ -2,11 +2,10 @@ Package: icpim
 Title: Access the ICP Integrated Monitoring Open Data
 Version: 0.1.0
 Authors@R: c(
-    person("James", "Weldon", , "weldondesign@gmail.com", role = c("aut", "cre")),
+    person("James", "Weldon", , "weldondesign@gmail.com",
+           role = c("aut", "cre", "cph")),
     person("ICP Integrated Monitoring Programme Centre", role = "dtc",
-           comment = "Data collection and curation"),
-    person("Swedish University of Agricultural Sciences", role = "cph",
-           comment = "Publisher of the underlying dataset"))
+           comment = "Collects and curates the monitoring data this package reads"))
 Description: Download, cache and tidy the open dataset of the International
     Cooperative Programme on Integrated Monitoring of Air Pollution Effects on
     Ecosystems (ICP IM), published by the Swedish University of Agricultural
