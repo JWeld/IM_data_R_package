@@ -77,6 +77,21 @@ lookup <- function(codes, from, to) {
   to[match(codes, from)]
 }
 
+# The first list that names each code, taking the next one wherever the
+# previous left NA.
+#
+# Index assignment rather than ifelse(): ifelse() collapses a zero-length test
+# to logical(0), so a table filtered down to no rows - which im_read() returns
+# rather than erroring - would decode to a logical column that no longer binds
+# to the character one of a non-empty read.
+first_named <- function(x, ...) {
+  for (y in list(...)) {
+    miss <- is.na(x)
+    x[miss] <- y[miss]
+  }
+  x
+}
+
 # The determinand column holds codes from two different published lists, and
 # the companion column (LISTSUB for SUBST, PARLIST for PARAM) says which:
 #
@@ -102,17 +117,16 @@ decode_codes <- function(codes, lists = NULL, version = im_version()) {
 
   if (is.null(lists)) {
     # No discriminator: prefer the substance list, fall back to parameters.
-    return(ifelse(is.na(from_subst), from_par, from_subst))
+    return(first_named(from_subst, from_par))
   }
 
-  out <- ifelse(
-    !is.na(lists) & lists == "IM",
-    from_par,     # IM list
-    from_subst    # DB list, or unstated
-  )
+  out <- from_subst              # DB list, or unstated
+  im  <- !is.na(lists) & lists == "IM"
+  out[im] <- from_par[im]        # IM list
+
   # A handful of rows name a list that does not hold the code (94 in AC);
   # falling back beats returning NA.
-  ifelse(is.na(out), ifelse(is.na(from_subst), from_par, from_subst), out)
+  first_named(out, from_subst, from_par)
 }
 
 report_unmatched <- function(codes, decoded, what) {

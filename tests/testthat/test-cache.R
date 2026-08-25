@@ -41,3 +41,18 @@ test_that("the DOIs are the published ones", {
   expect_equal(im_doi(), "10.5878/z376-2m63")
   expect_equal(im_doi(concept = TRUE), "10.5878/x6fn-gw26")
 })
+
+test_that("listing the cache shows everything clearing it would remove", {
+  # im_update_codes() caches the code lists alongside the data files, so a
+  # lister that sees only CSVs under-reports what is there and what will go.
+  dir <- withr::local_tempdir()
+  withr::local_options(icpim.cache_dir = dir)
+  dir.create(file.path(dir, "v1"))
+  file.create(file.path(dir, "v1", "MC_metal_chemistry_mosses.csv"))
+  saveRDS(list(), file.path(dir, "v1", "_code_lists.rds"))
+
+  listed <- im_cache_list("1")$file
+  expect_true("_code_lists.rds" %in% listed)
+  removed <- suppressMessages(im_cache_clear("1", confirm = FALSE))
+  expect_setequal(listed, basename(removed))
+})

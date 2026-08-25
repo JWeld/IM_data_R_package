@@ -30,6 +30,10 @@ im_cache_dir <- function(version = im_version(), create = FALSE) {
 
 #' List and clear cached files
 #'
+#' The cache holds the published CSV files and, for a release this package was
+#' not built against, the code lists fetched for it. Both are listed, so what
+#' `im_cache_list()` shows is what `im_cache_clear()` would remove.
+#'
 #' @param version Dataset version. Defaults to [im_version()].
 #'
 #' @return `im_cache_list()` returns a tibble with one row per cached file and
@@ -41,7 +45,7 @@ im_cache_dir <- function(version = im_version(), create = FALSE) {
 im_cache_list <- function(version = im_version()) {
   dir <- im_cache_dir(version, create = FALSE)
   files <- if (dir.exists(dir)) {
-    list.files(dir, pattern = "\\.csv$", full.names = TRUE)
+    list.files(dir, full.names = TRUE)
   } else {
     character()
   }

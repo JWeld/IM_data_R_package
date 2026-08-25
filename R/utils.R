@@ -18,7 +18,10 @@ resolve_subprog <- function(x, several.ok = FALSE, version = im_version()) {
   if (!is.character(x) || !length(x)) {
     cli::cli_abort("{.arg subprog} must be a character vector of codes.")
   }
-  if (several.ok && length(x) == 1L && tolower(x) == "all") {
+  # identical() rather than ==: tolower(NA) == "all" is NA, which reaches if()
+  # as an NA condition and errors before the validation below can report the
+  # bad code.
+  if (several.ok && length(x) == 1L && identical(tolower(x), "all")) {
     return(meta$subprog)
   }
   if (!several.ok && length(x) != 1L) {

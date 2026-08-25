@@ -51,7 +51,7 @@ im_download <- function(subprog, overwrite = FALSE, quiet = NULL,
         "Downloading {.field {meta$subprog[i]}} ({meta$name[i]}){if (is.na(sz)) '' else paste0(', ~', sz, ' MB')} ..."
       )
     }
-    fetch_file(url, dest, quiet = quiet)
+    fetch_file(url, dest, quiet = quiet, version = version)
     dest
   }, character(1))
 
@@ -62,7 +62,7 @@ im_download <- function(subprog, overwrite = FALSE, quiet = NULL,
 }
 
 # Atomic download. Errors are turned into one clear message rather than curl's.
-fetch_file <- function(url, dest, quiet = TRUE) {
+fetch_file <- function(url, dest, quiet = TRUE, version = im_version()) {
   tmp <- paste0(dest, ".part-", Sys.getpid())
   on.exit(unlink(tmp), add = TRUE)
 
@@ -78,14 +78,29 @@ fetch_file <- function(url, dest, quiet = TRUE) {
       TRUE
     },
     error = function(e) {
+      # Three quite different causes, and the advice differs completely
+      # between them: no connection, a release that was never published, or a
+      # file that has moved within a release that exists. A 404 blamed on the
+      # network sends the reader looking in the wrong place.
+      cause <- if (!curl::has_internet()) {
+        c("i" = "There is no network connection.")
+      } else if (!im_version_exists(version)) {
+        c("i" = "Version {.val {version}} is not published.",
+          "i" = "Pin one that is with {.code options(icpim.version = ...)};
+                 {.fn im_latest_version} says which is newest.")
+      } else {
+        c("i" = "Version {.val {version}} exists, so the file may have been
+                 renamed or withdrawn.",
+          "i" = "See {.fn im_manifest} for what that release publishes.")
+      }
       cli::cli_abort(
         c(
           "Could not download {.url {url}}.",
           "x" = conditionMessage(e),
-          "i" = "Check your internet connection.",
+          cause,
           "i" = paste(
-            "If the repository has moved, the files can be downloaded by hand",
-            "from {.url https://doi.org/10.5878/z376-2m63} into",
+            "The files can also be downloaded by hand from",
+            "{.url https://doi.org/10.5878/z376-2m63} into",
             "{.path {dirname(dest)}}."
           )
         ),
@@ -101,7 +116,7 @@ fetch_file <- function(url, dest, quiet = TRUE) {
     if (length(first) && grepl("^\\s*<", first)) {
       cli::cli_abort(
         c("The server returned a web page rather than a CSV file.",
-          "i" = "The dataset version may not exist. Current: {.val {im_version()}}."),
+          "i" = "Version {.val {version}} may not exist."),
         call = NULL
       )
     }

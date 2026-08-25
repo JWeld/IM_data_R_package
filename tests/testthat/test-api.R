@@ -111,3 +111,12 @@ test_that("im_check_version compares the pinned version with the newest", {
   expect_equal(chk$current, im_version())
   expect_type(chk$newer_available, "logical")
 })
+
+test_that("a missing subprogramme code gets the package's own error", {
+  # tolower(NA) == "all" is NA, which used to reach if() as an NA condition.
+  expect_error(resolve_subprog(NA_character_, several.ok = TRUE),
+               "Unknown subprogramme")
+  expect_error(resolve_subprog(NA_character_), "Unknown subprogramme")
+  expect_equal(resolve_subprog("all", several.ok = TRUE),
+               im_subprogrammes$subprog)
+})

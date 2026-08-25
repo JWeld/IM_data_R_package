@@ -21,7 +21,9 @@ columns \code{file}, \code{size_mb} and \code{modified}; it has zero rows if not
 cached. \code{im_cache_clear()} returns, invisibly, the paths it removed.
 }
 \description{
-List and clear cached files
+The cache holds the published CSV files and, for a release this package was
+not built against, the code lists fetched for it. Both are listed, so what
+\code{im_cache_list()} shows is what \code{im_cache_clear()} would remove.
 }
 \examples{
 im_cache_list()

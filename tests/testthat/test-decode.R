@@ -68,3 +68,20 @@ test_that("im_codes searches both code and name", {
   expect_equal(im_codes("substance", "^sodium$")$code, "NA")
   expect_true(nrow(im_codes("flag")) == 13)
 })
+
+test_that("decoding an empty vector gives character, not logical", {
+  # ifelse() collapses a zero-length test to logical(0), which then refuses
+  # to combine with the character column of a non-empty read.
+  expect_type(decode_codes(character(0), character(0)), "character")
+  expect_type(decode_codes(character(0), NULL), "character")
+})
+
+test_that("an empty result combines with a full one", {
+  # im_read() returns an empty table when a filter matches nothing, so
+  # looping over sites and binding the parts must work when one is empty.
+  pc <- im_read_file(im_example("sample_PC.csv"))
+  full  <- im_decode(pc)
+  empty <- im_decode(pc[0, ])
+  expect_identical(vapply(empty, class, ""), vapply(full, class, ""))
+  expect_equal(nrow(dplyr::bind_rows(full, empty)), nrow(full))
+})
