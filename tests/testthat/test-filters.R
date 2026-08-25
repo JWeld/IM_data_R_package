@@ -90,3 +90,39 @@ test_that("known_subprogs returns the same columns whichever branch it takes", {
   expect_true(is.na(other$key[other$subprog == "XX"]))
   expect_equal(other$key[other$subprog == "MC"], "SUBST")
 })
+
+# Version 2 keeps DAY in every chemistry table for schema stability, even
+# where it is empty throughout. Seven of the fourteen carry it empty.
+with_empty_day <- function(env = parent.frame()) {
+  src <- readLines(im_example("sample_PC.csv"), encoding = "UTF-8")
+  hdr <- strsplit(src[1], ",", fixed = TRUE)[[1]]
+  i <- which(hdr == "YYYYMM")
+  ins <- function(f) append(f, "", after = i)
+  body <- vapply(src[-1], function(ln) {
+    f <- strsplit(ln, ",", fixed = TRUE)[[1]]
+    length(f) <- length(hdr); f[is.na(f)] <- ""
+    paste(ins(f), collapse = ",")
+  }, character(1), USE.NAMES = FALSE)
+  path <- withr::local_tempfile(fileext = ".csv", .local_envir = env)
+  writeLines(c(paste(ins(hdr) |> replace(i + 1, "DAY"), collapse = ","), body),
+             path, useBytes = TRUE)
+  path
+}
+
+test_that("a column retained but empty throughout reads and widens", {
+  x <- im_read_file(with_empty_day())
+  expect_true("DAY" %in% names(x))
+  expect_true(all(is.na(x$DAY)))
+  expect_type(x$DAY, "double")          # typed, not left as character
+
+  # It joins the pivot key without splitting anything, since it is constant.
+  w <- im_widen(im_decode(x))
+  ref <- im_widen(im_decode(im_read_file(im_example("sample_PC.csv"))))
+  expect_equal(nrow(w), nrow(ref))
+  expect_true("DAY" %in% names(w))
+})
+
+test_that("the sodium count is unchanged by the extra column", {
+  x <- im_read_file(with_empty_day())
+  expect_equal(sum(x$SUBST == "NA", na.rm = TRUE), 60L)
+})
