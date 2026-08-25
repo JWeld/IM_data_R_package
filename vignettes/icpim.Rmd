@@ -144,11 +144,16 @@ extremes; across the whole dataset that biases mean air temperature by
 +0.42 °C. For precipitation it is worse, because monthly sums (`S`) sit
 alongside maximum *daily* sums (`SZ`).
 
-Use the `stat` argument, which accepts either the codes or the readable names:
+`im_read()` fetches; choosing which statistic you want is your own step. The
+`stat` column decodes the flag, so select on whichever reads better:
 
-```{r, eval = FALSE}
-temp <- im_read("AM", substances = "TEMP", stat = "mean")
+```{r}
+subset(am, stat == "mean", select = c(SUBST, LEVEL, YYYYMM, VALUE)) |> head(3)
 ```
+
+`FLAGSTA == "X"` selects the same rows. Unflagged primary measurements - whole
+subprogrammes of them, precipitation chemistry among others - are labelled
+`"primary"`.
 
 `im_widen()` keeps `FLAGSTA` in the key by default, and refuses to pivot
 rather than collapse duplicates silently:

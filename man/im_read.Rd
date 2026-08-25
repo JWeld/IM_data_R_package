@@ -10,7 +10,6 @@ im_read(
   countries = NULL,
   years = NULL,
   substances = NULL,
-  stat = NULL,
   decode = TRUE,
   repair = "auto",
   quiet = NULL,
@@ -33,10 +32,6 @@ as it appears in \code{COUNTRY} (\code{"Sweden"}). Case-insensitive.}
 \item{substances}{Optional character vector of substance or parameter codes
 to keep, matched against \code{SUBST} or \code{PARAM} as appropriate, e.g.
 \code{c("SO4S", "NO3N")}. Use \code{"NA"} for sodium.}
-
-\item{stat}{Optional statistic filter, applied to \code{FLAGSTA}. Either raw
-codes (\code{"X"}, \code{"S"}) or the decoded names in \code{stat} (\code{"mean"}, \code{"sum"},
-\code{"maximum"}). \code{"primary"} keeps only unflagged primary values.}
 
 \item{decode}{Logical. Join the code lists to add readable name columns?}
 
@@ -97,7 +92,7 @@ carries several rows distinguished only by \code{FLAGSTA}: the monthly mean
 (\code{XA}, \code{XZ}). 47\% of air- and soil-temperature keys have more than one.
 Averaging without filtering mixes means with extremes; for \code{PREC} it mixes
 monthly sums (\code{S}) with maximum daily sums (\code{SZ}) and monthly maxima (\code{Z}).
-Use the \code{stat} argument, or filter on \code{stat}/\code{FLAGSTA} yourself.
+Select on the \code{stat} column, or on \code{FLAGSTA} itself, before aggregating.
 }
 
 \examples{
@@ -111,8 +106,9 @@ if (curl::has_internet()) {
   na <- im_read("PC", substances = "NA")
   unique(na$substance)
 
-  # Monthly mean air temperature only, not the extremes:
-  temp <- im_read("AM", substances = "TEMP", stat = "mean")
+  # Air temperature, then keep the monthly means rather than the extremes:
+  temp <- im_read("AM", substances = "TEMP")
+  means <- temp[temp$stat == "mean", ]
 }
 }
 }

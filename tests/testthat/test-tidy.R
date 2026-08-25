@@ -33,18 +33,28 @@ test_that("values_fn is the documented way through a real collision", {
 
 test_that("widening works once a single statistic is selected", {
   am <- im_read_file(im_example("sample_AM.csv")) |> im_decode()
-  mean_only <- filter_stat(am, "mean")
+  mean_only <- am[am$stat == "mean", ]
   w <- im_widen(mean_only, id_cols = c("AREA", "SCODE", "LEVEL", "YYYYMM"))
   expect_true("TEMP" %in% names(w))
   expect_equal(nrow(w), nrow(mean_only))
 })
 
-test_that("stat filtering accepts codes and readable names alike", {
+test_that("the stat column is what you select on, by code or by name", {
   am <- im_read_file(im_example("sample_AM.csv")) |> im_decode()
-  expect_equal(nrow(filter_stat(am, "X")), nrow(filter_stat(am, "mean")))
-  expect_equal(nrow(filter_stat(am, "mean")), 60)
-  expect_equal(nrow(filter_stat(am, "maximum")), 60)
-  expect_equal(nrow(filter_stat(am, c("mean", "sum"))), 72)
+  # Reading fetches; choosing a statistic is the reader's own step, done on
+  # either the published flag or its decoded name.
+  expect_equal(sum(am$FLAGSTA == "X", na.rm = TRUE), 60L)
+  expect_equal(sum(am$stat == "mean"), 60L)
+  expect_equal(sum(am$stat == "maximum"), 60L)
+  expect_equal(sum(am$stat %in% c("mean", "sum")), 72L)
+  # The two are the same rows, not merely the same count.
+  expect_identical(am$VALUE[am$FLAGSTA == "X" & !is.na(am$FLAGSTA)],
+                   am$VALUE[am$stat == "mean"])
+})
+
+test_that("unflagged primary values are labelled in the stat column", {
+  pc <- im_read_file(im_example("sample_PC.csv")) |> im_decode()
+  expect_true(all(pc$stat[is.na(pc$FLAGSTA)] == "primary"))
 })
 
 test_that("mixing statistics is what the warning is about", {

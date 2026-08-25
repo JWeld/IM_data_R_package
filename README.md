@@ -41,8 +41,9 @@ pc <- im_read("PC", countries = "SE", years = 2000:2019)
 # One column per determinand
 im_widen(pc)
 
-# Monthly mean air temperature, not the extremes
-temp <- im_read("AM", substances = "TEMP", stat = "mean")
+# Air temperature; the stat column says which summary each row is
+temp <- im_read("AM", substances = "TEMP")
+means <- subset(temp, stat == "mean")
 ```
 
 ## Why not just `read.csv()`

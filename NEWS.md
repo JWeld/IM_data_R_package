@@ -5,7 +5,7 @@ First release.
 ## Reading
 
 * `im_read()` downloads, caches, reads and tidies one subprogramme, with
-  filters for site, country, year, substance and statistic.
+  filters for site, country, year and substance.
 * `im_read_file()` does the reading and typing half for a file already on disk.
 * `im_download()` warms the cache; `"all"` fetches every subprogramme.
 * Files are cached under `tools::R_user_dir("icpim", "cache")`, keyed by
@@ -57,7 +57,7 @@ First release.
   sample analysed by two methods - and reports what fraction of rows is
   affected.
 * Filters report rather than empty the table in silence. `sites`, `countries`,
-  `years`, `substances` and `stat` each warn when they match nothing, naming
+  `years` and `substances` each warn when they match nothing, naming
   what was asked for and what the subprogramme actually holds - a typo used to
   be indistinguishable from the data genuinely having none. The warning is a
   diagnostic, so `quiet = TRUE` does not silence it; use `suppressWarnings()`.
@@ -65,6 +65,13 @@ First release.
   (`"Sweden"`) as well as the ISO code that prefixes `AREA` (`"SE"`). Only the
   code worked before, so filtering on the value visible in the data returned
   nothing.
+* `im_read()` has no `stat` argument. Choosing which summary you want - the
+  monthly mean rather than the maximum - is an analysis step, not part of
+  fetching, and an argument named `stat` sitting beside a decoded column of the
+  same name was more confusing than useful. The column is what you select on:
+  `subset(x, stat == "mean")`, or `FLAGSTA == "X"` for the published code.
+  The note that a subprogramme mixes statistics now fires whenever it applies,
+  rather than only when the argument was left unset.
 * `im_units()` reports determinands published in more than one unit.
 * `im_detection_limit()` makes the treatment of below-detection values
   explicit.

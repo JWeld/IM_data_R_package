@@ -55,7 +55,7 @@ IM_NUMERIC_COLS <- c(
 #' (`XA`, `XZ`). 47% of air- and soil-temperature keys have more than one.
 #' Averaging without filtering mixes means with extremes; for `PREC` it mixes
 #' monthly sums (`S`) with maximum daily sums (`SZ`) and monthly maxima (`Z`).
-#' Use the `stat` argument, or filter on `stat`/`FLAGSTA` yourself.
+#' Select on the `stat` column, or on `FLAGSTA` itself, before aggregating.
 #'
 #' @param subprog Two-letter subprogramme code, e.g. `"PC"` for precipitation
 #'   chemistry. See [im_subprogrammes] for the full list.
@@ -68,9 +68,6 @@ IM_NUMERIC_COLS <- c(
 #' @param substances Optional character vector of substance or parameter codes
 #'   to keep, matched against `SUBST` or `PARAM` as appropriate, e.g.
 #'   `c("SO4S", "NO3N")`. Use `"NA"` for sodium.
-#' @param stat Optional statistic filter, applied to `FLAGSTA`. Either raw
-#'   codes (`"X"`, `"S"`) or the decoded names in `stat` (`"mean"`, `"sum"`,
-#'   `"maximum"`). `"primary"` keeps only unflagged primary values.
 #' @param decode Logical. Join the code lists to add readable name columns?
 #' @param repair Correct the blank sodium substance code. `"auto"`, the
 #'   default, applies the correction to version 1 and leaves every later
@@ -102,8 +99,9 @@ IM_NUMERIC_COLS <- c(
 #'   na <- im_read("PC", substances = "NA")
 #'   unique(na$substance)
 #'
-#'   # Monthly mean air temperature only, not the extremes:
-#'   temp <- im_read("AM", substances = "TEMP", stat = "mean")
+#'   # Air temperature, then keep the monthly means rather than the extremes:
+#'   temp <- im_read("AM", substances = "TEMP")
+#'   means <- temp[temp$stat == "mean", ]
 #' }
 #' }
 im_read <- function(subprog,
@@ -111,7 +109,6 @@ im_read <- function(subprog,
                     countries = NULL,
                     years = NULL,
                     substances = NULL,
-                    stat = NULL,
                     decode = TRUE,
                     repair = "auto",
                     quiet = NULL,
@@ -170,20 +167,17 @@ im_read <- function(subprog,
     keep <- !is.na(out[[key]]) & out[[key]] %in% substances
     out <- filter_rows(out, keep, "substances", substances, out[[key]])
   }
-  if (!is.null(stat)) {
-    out <- filter_stat(out, stat)
-  }
 
   if (isTRUE(decode)) out <- im_decode(out, quiet = quiet, version = version)
 
   # Nudge on FLAGSTA once per session, only when it actually bites.
   if (!quiet && !isTRUE(the$warned_flagsta) && "FLAGSTA" %in% names(out) &&
-      is.null(stat) && has_mixed_stats(out)) {
+      has_mixed_stats(out)) {
     the$warned_flagsta <- TRUE
     cli::cli_alert_info(c(
       "{.field {code}} mixes statistics: the same site, level and month can ",
       "carry a mean, a minimum and a maximum as separate rows. ",
-      "Filter on {.code stat} before aggregating."
+      "Select on the {.field stat} column before aggregating."
     ))
   }
 
@@ -361,27 +355,6 @@ filter_rows <- function(x, keep, arg, wanted, available) {
     ))
   }
   x[keep, , drop = FALSE]
-}
-
-filter_stat <- function(x, stat) {
-  if (!"FLAGSTA" %in% names(x)) {
-    cli::cli_warn("This subprogramme has no {.field FLAGSTA}; {.arg stat} ignored.")
-    return(x)
-  }
-  want <- as.character(stat)
-  if ("primary" %in% want) {
-    keep <- is.na(x$FLAGSTA)
-    want <- setdiff(want, "primary")
-  } else {
-    keep <- rep(FALSE, nrow(x))
-  }
-  if (length(want)) {
-    codes <- im_flags$code[im_flags$type == "FLAGSTA" & im_flags$name %in% want]
-    codes <- union(codes, want)
-    keep <- keep | (!is.na(x$FLAGSTA) & x$FLAGSTA %in% codes)
-  }
-  filter_rows(x, keep, "stat", stat,
-              c(x$FLAGSTA, if (anyNA(x$FLAGSTA)) "primary"))
 }
 
 has_mixed_stats <- function(x) {
