@@ -18,7 +18,7 @@ under CC BY 4.0.
 
 `icpim` downloads and caches the published files, reads them with the correct
 column types, decodes the code lists into readable names, and handles several
-encoding traps that are easy to walk into and hard to spot afterwards.
+potential pitfalls that are easy for users to miss.
 
 ## Installation
 
