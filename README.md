@@ -13,7 +13,7 @@ The dataset ([doi:10.5878/z376-2m63](https://doi.org/10.5878/z376-2m63))
 publishes long-term integrated ecosystem monitoring from European forested
 catchments: 21 subprogrammes, 55 sites in 14 countries, roughly 1.2 million
 observations from 1967 to 2020, covering deposition, soil, soil water,
-groundwater, runoff, vegetation and biota. It is updated annually and released
+groundwater, runoff, vegetation and biota. It is updated at least annually and released
 under CC BY 4.0.
 
 `icpim` downloads and caches the published files, reads them with the correct
@@ -47,10 +47,10 @@ temp <- im_read("AM", substances = "TEMP", stat = "mean")
 
 ## Why not just `read.csv()`
 
-Three things in the published files will bite.
+To avoid some common pitfalls in importing the data!
 
 **Sodium's substance code is the string `NA`.** Every default CSV reader in R
-treats that as a missing value, which silently deletes every sodium record and
+treats that as a missing value, which deletes every sodium record and
 breaks any `SUBST ==` comparison:
 
 ```r
@@ -58,10 +58,9 @@ read.csv(text = "SUBST,VALUE\nNA,2.4\nCL,4.4")$SUBST
 #> [1] NA   "CL"
 ```
 
-The same thing happened once before publication, and is a known issue
-affecting **version 1 of the dataset only**: sodium's code arrives blank in
-48,444 rows across thirteen subprogrammes. It is corrected from version 2
-onwards, and `icpim` corrects it on read. The default `repair = "auto"`
+In the published data this is corrected from version 2
+onwards but it is easy to inadvertently recreate the same issue yourself, 
+and `icpim` corrects it on read. The default `repair = "auto"`
 applies the correction to version 1 and leaves later versions untouched, so
 scripts keep working across the change.
 
@@ -77,12 +76,11 @@ maximum, and the averaged daily extremes - distinguished only by that flag.
 mean air temperature by +0.42 °C, and for precipitation it mixes monthly sums
 with maximum *daily* sums.
 
-`vignette("icpim")` covers each of these, and the evidence behind the sodium
-repair.
+`vignette("icpim")` covers each of these.
 
 ## Reproducibility
 
-The deposit is updated annually and each release has its own DOI. `icpim` pins
+The deposit is updated (at least) annually and each release has its own DOI. `icpim` pins
 version 1 by default so scripts keep returning the same numbers; move
 deliberately with `options(icpim.version = "2")`. The cache is keyed by
 version, so releases are never mixed.
@@ -101,9 +99,9 @@ therefore needs no update to this package.
 
 ## Citation
 
-The data are CC BY 4.0 and require attribution. `im_cite()` prints the
-citation for the dataset, which is not the same as `citation("icpim")` for
-this package.
+The data are CC BY 4.0 and require attribution: `im_cite()` prints the
+citation for the dataset. Note that this is not the same as `citation("icpim")` 
+which gives the citation for this R package.
 
 > Weldon, J. et al. (2026). The International Cooperative Programme on
 > Integrated Monitoring of Air Pollution Effects on Ecosystems (ICP IM),
