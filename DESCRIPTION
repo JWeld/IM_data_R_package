@@ -2,7 +2,7 @@ Package: icpim
 Title: Access the ICP Integrated Monitoring Open Data
 Version: 0.1.0
 Authors@R: c(
-    person("James", "Weldon", , "weldondesign@gmail.com",
+    person("James", "Weldon", , "james.weldon@slu.se",
            role = c("aut", "cre", "cph")),
     person("ICP Integrated Monitoring Programme Centre", role = "dtc",
            comment = "Collects and curates the monitoring data this package reads"))

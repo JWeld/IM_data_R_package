@@ -11,7 +11,7 @@ dataset published at <doi:10.5878/z376-2m63>, described in Scientific Data
 0 errors | 0 warnings | 1 note
 
 * checking CRAN incoming feasibility ... NOTE
-  Maintainer: 'James Weldon <weldondesign@gmail.com>'
+  Maintainer: 'James Weldon <james.weldon@slu.se>'
   New submission
 
 This is expected for a first submission.

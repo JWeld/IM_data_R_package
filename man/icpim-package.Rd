@@ -17,11 +17,11 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: James Weldon \email{weldondesign@gmail.com} [copyright holder]
+\strong{Maintainer}: James Weldon \email{james.weldon@slu.se} [copyright holder]
 
 Authors:
 \itemize{
-  \item James Weldon \email{weldondesign@gmail.com} [copyright holder]
+  \item James Weldon \email{james.weldon@slu.se} [copyright holder]
 }
 
 Other contributors:
