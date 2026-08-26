@@ -12,15 +12,40 @@ dataset published at <doi:10.5878/z376-2m63>, described in Scientific Data
 
 * checking CRAN incoming feasibility ... NOTE
   Maintainer: 'James Weldon <james.weldon@slu.se>'
+
   New submission
 
-This is expected for a first submission.
+  Possibly misspelled words in DESCRIPTION:
+    ICP (2:19, 11:17)
+    IM (11:21)
+    al (12:15)
+    et (12:12)
+    pretreatment (17:34)
+
+The new-submission note is expected. The flagged words are all spelled as
+intended:
+
+* ICP and IM are the abbreviated name of the monitoring programme whose data
+  this package reads, the International Cooperative Programme on Integrated
+  Monitoring of Air Pollution Effects on Ecosystems. The name is written out
+  in full in the Description immediately before the abbreviation is used.
+* et and al are the standard citation form, used for the reference to the
+  data paper in the form CRAN asks for, Authors (year) <doi:...>.
+* pretreatment is the dataset's own vocabulary. The published lookup file is
+  pretreatment_codes.csv and the corresponding column in the data is PRETRE,
+  so the package names it the same way the data does.
 
 ## Test environments
 
 * macOS 15 (local), R 4.5.3
 * GitHub Actions: ubuntu-latest (R devel, release, oldrel-1),
   macOS-latest (release), windows-latest (release)
+* win-builder: R-devel and R-release
+
+All returned Status: OK apart from the note above, which win-builder is the
+only environment configured to raise. The GitHub Actions runs additionally
+execute the \donttest examples, so the download paths described below have
+been exercised against the live repository.
 
 ## Network use and files written
 
