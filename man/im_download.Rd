@@ -50,9 +50,11 @@ if (curl::has_internet()) {
   # leave the default, which persists between sessions.
   op <- options(icpim.cache_dir = tempfile())
 
-  # Warm the cache; note that nothing is returned to work with.
-  im_download("MC")          # one small subprogramme, ~14 kB
-  mc <- im_read("MC")        # this is the call that gives you data
+  try({
+    # Warm the cache; note that nothing is returned to work with.
+    im_download("MC")        # one small subprogramme, ~14 kB
+    mc <- im_read("MC")      # this is the call that gives you data
+  })
   options(op)
 }
 }

@@ -96,13 +96,15 @@ IM_NUMERIC_COLS <- c(
 #'   # leave the default, which persists between sessions.
 #'   op <- options(icpim.cache_dir = tempfile())
 #'
-#'   # Metal chemistry in mosses is the smallest subprogramme, ~14 kB:
-#'   mc <- im_read("MC", countries = "EE")
-#'   head(mc)
+#'   # try(): the repository may be unreachable even when the network is up.
+#'   try({
+#'     # Metal chemistry in mosses is the smallest subprogramme, ~14 kB:
+#'     mc <- im_read("MC", countries = "EE")
+#'     print(head(mc))
 #'
-#'   # Sodium: the code really is the string "NA".
-#'   unique(mc$substance[mc$SUBST == "NA"])
-#'
+#'     # Sodium: the code really is the string "NA".
+#'     print(unique(mc$substance[mc$SUBST == "NA"]))
+#'   })
 #'   options(op)
 #' }
 #' }

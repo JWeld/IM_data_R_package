@@ -31,12 +31,15 @@ that touches the network is handled as follows.
 * Downloads fail gracefully with an informative message: a missing
   connection, an unpublished dataset version, and a file that has moved
   within an existing version are distinguished and reported separately.
-* Examples that need the repository are wrapped in `\donttest{}` and further
-  guarded by `if (curl::has_internet())`. They fetch the smallest
-  subprogramme (about 14 kB) and set `options(icpim.cache_dir = tempfile())`
-  first, so a check run writes nothing outside the session temporary
+* Examples that need the repository are wrapped in `\donttest{}`, guarded by
+  `if (curl::has_internet())`, and additionally wrapped in `try()`, since the
+  repository can be unreachable even when the network is up. They fetch the
+  smallest subprogramme (about 14 kB) and set
+  `options(icpim.cache_dir = tempfile())` first, restoring the option
+  afterwards, so a check run writes nothing outside the session temporary
   directory. Examples that need no network run unguarded against small
   extracts shipped in `inst/extdata`.
+* The package is single-threaded and uses only https.
 * Tests that reach the repository are skipped with `skip_on_cran()` and
   `skip_if_offline()`. The remaining tests run offline against those same
   bundled extracts.
@@ -48,6 +51,15 @@ is user-manageable: `im_cache_dir()` reports the location,
 `im_cache_list()` shows its contents and `im_cache_clear()` empties it. A
 user who prefers otherwise can set `options(icpim.cache_dir = ...)` or the
 `ICPIM_CACHE_DIR` environment variable, including to a temporary directory.
+
+## Licensing of included data
+
+The package is MIT licensed. The lookup tables in `data/` and the small data
+extracts in `inst/extdata` are derived from the ICP Integrated Monitoring open
+dataset <doi:10.5878/z376-2m63>, which is CC BY 4.0. This is stated in the
+`Copyright` field of DESCRIPTION and in the documentation of each dataset, and
+the programme that collects the data is credited with a `dtc` role in
+`Authors@R`.
 
 ## Reverse dependencies
 

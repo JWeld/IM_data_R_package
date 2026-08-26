@@ -19,6 +19,12 @@ Description: Download, cache and tidy the open dataset of the International
     importantly the substance code for sodium, which is the literal string
     "NA".
 License: MIT + file LICENSE
+Copyright: The code lists in data/ and the data extracts in inst/extdata are
+    derived from the ICP Integrated Monitoring open dataset
+    <doi:10.5878/z376-2m63>, copyright the ICP Integrated Monitoring
+    Programme Centre and licensed CC BY 4.0
+    <https://creativecommons.org/licenses/by/4.0/>. All other components are
+    copyright James Weldon under the MIT licence in LICENSE.
 Encoding: UTF-8
 Language: en-GB
 Roxygen: list(markdown = TRUE)

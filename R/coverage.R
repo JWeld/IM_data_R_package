@@ -24,7 +24,7 @@
 #'   op <- options(icpim.cache_dir = tempfile())
 #'
 #'   # One small subprogramme
-#'   im_coverage("MC")
+#'   try(im_coverage("MC"))
 #'   options(op)
 #' }
 #' }
