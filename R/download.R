@@ -133,8 +133,19 @@ fetch_file <- function(url, dest, quiet = TRUE, version = im_version()) {
   )
 
   # A repository error page is HTML, not CSV, and would otherwise be cached and
-  # then fail confusingly at parse time.
+  # then fail confusingly at parse time. Likewise a zero-byte answer - which
+  # readLines() cannot see, since an empty file has no first line to check -
+  # would be installed as cached and then fail on every later read until the
+  # user finds `overwrite = TRUE`.
   if (ok) {
+    if (!isTRUE(file.size(tmp) > 0)) {
+      cli::cli_abort(
+        c("The server returned an empty file for {.url {url}}.",
+          "i" = "Nothing was cached. Try again, or download by hand from
+                 {.url https://doi.org/10.5878/z376-2m63}."),
+        call = NULL
+      )
+    }
     first <- readLines(tmp, n = 1L, warn = FALSE, encoding = "UTF-8")
     if (length(first) && grepl("^\\s*<", first)) {
       cli::cli_abort(

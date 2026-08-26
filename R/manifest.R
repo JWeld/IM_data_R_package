@@ -102,11 +102,19 @@ im_dataset_info <- function(version = im_version()) {
            year = NA_character_, publisher = IM_PUBLISHER,
            licence = IM_V1_INFO$licence)
     } else {
+      # Field by field through chr1(): the API has form for odd answers (it
+      # returns 200 with a null body for versions that do not exist), and a
+      # record missing a field must degrade to NA, not crash the read that
+      # asked for it.
+      title <- d$title
+      if (!is.null(title) && !is.atomic(title)) title <- title$en
+      title <- chr1(title)
+      ver   <- chr1(d$versionNumber)
       list(
-        title     = d$title$en %||% IM_V1_INFO$title,
-        doi       = as.character(d$doi),
-        version   = as.character(d$versionNumber),
-        year      = substr(as.character(d$publishedDate), 1, 4),
+        title     = if (is.na(title)) IM_V1_INFO$title else title,
+        doi       = chr1(d$doi),
+        version   = if (is.na(ver)) version else ver,
+        year      = substr(chr1(d$publishedDate), 1, 4),
         publisher = IM_PUBLISHER,
         licence   = IM_V1_INFO$licence
       )
@@ -162,7 +170,8 @@ im_cite <- function(version = im_version()) {
     ))
   } else {
     wrap(paste0(
-      IM_PAPER$authors, " (", info$year, "). ", info$title,
+      IM_PAPER$authors,
+      " (", if (is.na(info$year)) "n.d." else info$year, "). ", info$title,
       ", version ", info$version, ". ", info$publisher,
       ". https://doi.org/", info$doi
     ))

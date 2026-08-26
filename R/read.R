@@ -140,6 +140,13 @@ im_read <- function(subprog,
   }
   attr(out, "icpim_blank_subst") <- NULL
 
+  # Which returned rows the sodium repair touched. Kept as a mask alongside
+  # the table so every filter below narrows both together; the provenance
+  # count at the end is then over rows actually repaired and actually
+  # returned, so a correctly coded file reports zero even under repair = TRUE.
+  repaired <- seq_len(nrow(out)) %in% (attr(out, "icpim_repaired_rows") %||% integer(0))
+  attr(out, "icpim_repaired_rows") <- NULL
+
   # Filters, applied before decoding so the joins are as small as possible.
   # Each reports rather than silently emptying the table: a filter that matches
   # nothing is nearly always a typo or the wrong vocabulary, and finding that
@@ -148,6 +155,7 @@ im_read <- function(subprog,
     require_col(out, "AREA", "sites")
     keep <- toupper(out$AREA) %in% toupper(sites)
     out <- filter_rows(out, keep, "sites", sites, out$AREA)
+    repaired <- repaired[keep]
   }
   if (!is.null(countries)) {
     require_col(out, "AREA", "countries")
@@ -159,17 +167,20 @@ im_read <- function(subprog,
     keep <- iso %in% cc | (!is.na(full) & full %in% cc)
     out <- filter_rows(out, keep, "countries", countries,
                        unique(c(substr(out$AREA, 1, 2), out$COUNTRY)))
+    repaired <- repaired[keep]
   }
   if (!is.null(years)) {
     require_col(out, "year", "years")
     keep <- !is.na(out$year) & out$year %in% years
     out <- filter_rows(out, keep, "years", years, out$year)
+    repaired <- repaired[keep]
   }
   if (!is.null(substances)) {
     key <- im_key_col(out)
     require_col(out, key, "substances")
     keep <- !is.na(out[[key]]) & out[[key]] %in% substances
     out <- filter_rows(out, keep, "substances", substances, out[[key]])
+    repaired <- repaired[keep]
   }
 
   if (isTRUE(decode)) out <- im_decode(out, quiet = quiet, version = version)
@@ -199,13 +210,10 @@ im_read <- function(subprog,
     read_at          = Sys.time(),
     package_version  = as.character(utils::packageVersion("icpim")),
     rows_read        = nrow(out),
-    # Counted on what is returned, not on the file, so it cannot look larger
-    # than `rows_read` after filtering. In version 1 no row carried the sodium
-    # code already, so every "NA" here is one this package put back.
-    sodium_corrected = if (isTRUE(repair_now)) {
-      k <- im_key_col(out)
-      if (k %in% names(out)) sum(out[[k]] == "NA", na.rm = TRUE) else 0L
-    } else 0L
+    # Rows this call actually repaired and actually returned - not a count of
+    # "NA" codes, which from version 2 onwards the file carries legitimately
+    # and this package never touched.
+    sodium_corrected = sum(repaired)
   )
 }
 
@@ -253,11 +261,13 @@ im_read_file <- function(path, repair = TRUE, quiet = TRUE) {
   # where the determinand column is PARAM: three rows of BI carry the blank in
   # version 1, and they belong to the same issue.
   n_blank <- 0L
+  blank_rows <- integer(0)
   for (col in intersect(c("SUBST", "PARAM"), names(raw))) {
     blank <- !is.na(raw[[col]]) & !nzchar(trimws(raw[[col]]))
     n <- sum(blank)
     if (n == 0L) next
     n_blank <- n_blank + n
+    blank_rows <- union(blank_rows, which(blank))
     if (isTRUE(repair)) raw[[col]][blank] <- "NA"
   }
   if (isTRUE(repair) && n_blank > 0 && !quiet && !isTRUE(the$warned_sodium)) {
@@ -283,8 +293,11 @@ im_read_file <- function(path, repair = TRUE, quiet = TRUE) {
 
   out <- im_add_dates(raw)
   # Recorded so im_read() can tell a corrected file from an uncorrected one
-  # without reading it twice.
+  # without reading it twice. The row indices exist so that after im_read()
+  # filters, the provenance count covers rows actually repaired *and*
+  # returned - a total alone cannot follow the rows through a filter.
   attr(out, "icpim_blank_subst") <- n_blank
+  attr(out, "icpim_repaired_rows") <- if (isTRUE(repair)) blank_rows else integer(0)
   # A bare path says nothing about which release it came from, so those fields
   # stay unknown here; im_read() fills them in.
   set_provenance(
@@ -297,7 +310,7 @@ im_read_file <- function(path, repair = TRUE, quiet = TRUE) {
     read_at          = Sys.time(),
     package_version  = as.character(utils::packageVersion("icpim")),
     rows_read        = nrow(out),
-    sodium_corrected = if (isTRUE(repair)) n_blank else 0L
+    sodium_corrected = if (isTRUE(repair)) length(blank_rows) else 0L
   )
 }
 

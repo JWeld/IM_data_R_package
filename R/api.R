@@ -75,13 +75,25 @@ im_api_dataset <- function(version = NULL) {
 im_latest_version <- function() {
   d <- im_api_dataset(NULL)
   if (is.null(d)) return(NA_character_)
-  as.character(d$versionNumber)
+  chr1(d$versionNumber)
 }
 
 #' @rdname im_latest_version
 #' @export
 im_version_exists <- function(version) {
   !is.null(im_api_dataset(as.character(version)))
+}
+
+# Is version string `a` newer than `b`? as.numeric() turns "2.0.1" into NA,
+# and an NA here reached if() in im_check_version and errored - on exactly the
+# kind of version string this package has never seen, which is the case the
+# check exists for. numeric_version() compares dotted strings correctly;
+# anything neither of them can parse compares FALSE rather than crashing.
+version_newer <- function(a, b) {
+  cmp <- tryCatch(numeric_version(a) > numeric_version(b),
+                  error = function(e) NA)
+  if (isTRUE(cmp) || isFALSE(cmp)) return(cmp)
+  isTRUE(suppressWarnings(as.numeric(a) > as.numeric(b)))
 }
 
 #' Check whether a newer dataset version has been published
@@ -107,8 +119,7 @@ im_version_exists <- function(version) {
 im_check_version <- function(quiet = FALSE) {
   current <- im_version()
   latest  <- im_latest_version()
-  newer   <- !is.na(latest) &&
-    suppressWarnings(as.numeric(latest) > as.numeric(current))
+  newer   <- !is.na(latest) && version_newer(latest, current)
 
   if (!quiet) {
     if (is.na(latest)) {
@@ -151,9 +162,13 @@ im_manifest <- function(version = im_version(),
   type <- match.arg(type)
   d <- im_api_dataset(as.character(version))
 
-  if (is.null(d)) {
+  # A record can arrive without its file list, not only not at all; both mean
+  # the same thing here - the repository's answer is unusable.
+  f <- if (is.null(d)) NULL else d$file
+  if (is.null(f) || is.null(f$name) || !length(f$name)) {
     cli::cli_warn(c(
-      "Could not reach the repository; using the bundled catalogue.",
+      "Could not read the file list from the repository; using the bundled
+       catalogue.",
       "i" = "It describes version {.val {IM_BUNDLED_VERSION}} and may be out of date."
     ))
     out <- tibble::tibble(
@@ -166,14 +181,17 @@ im_manifest <- function(version = im_version(),
     return(if (type == "documentation") out[0, ] else out)
   }
 
-  f <- d$file
+  nm <- as.character(f$name)
   out <- tibble::tibble(
-    file    = as.character(f$name),
-    type    = as.character(f$type),
-    size_mb = round(as.numeric(f$contentSize) / 1024^2, 2)
+    file    = nm,
+    type    = if (is.null(f$type)) rep(NA_character_, length(nm))
+              else as.character(f$type),
+    size_mb = if (is.null(f$contentSize)) rep(NA_real_, length(nm))
+              else round(suppressWarnings(as.numeric(f$contentSize)) / 1024^2, 2)
   )
+  # %in%, not ==: an NA type must not become an NA subscript downstream.
   out$subprog <- ifelse(
-    out$type == "data",
+    out$type %in% "data",
     toupper(sub("_.*$", "", out$file)),
     NA_character_
   )
@@ -188,8 +206,8 @@ im_manifest <- function(version = im_version(),
   out <- out[order(!is.na(out$subprog) == FALSE, out$file), ]
 
   switch(type,
-    data          = out[out$type == "data", ],
-    documentation = out[out$type == "documentation", ],
+    data          = out[out$type %in% "data", ],
+    documentation = out[out$type %in% "documentation", ],
     all           = out
   )
 }

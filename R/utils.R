@@ -1,5 +1,15 @@
 `%||%` <- function(x, y) if (is.null(x)) y else x
 
+# One character value from an API field. The repository's answers are not
+# under this package's control, and a record can arrive without a field: NULL
+# or zero-length must become NA rather than character(0), which turns a later
+# `if (is.na(x))` into "argument is of length zero". Empty strings count as
+# absent too.
+chr1 <- function(x) {
+  x <- tryCatch(as.character(x), error = function(e) NA_character_)
+  if (!length(x) || is.na(x[[1]]) || !nzchar(x[[1]])) NA_character_ else x[[1]]
+}
+
 # Internal accessor so package code does not depend on lazy-data promises
 # being visible to R CMD check.
 subprog_meta <- function() icpim::im_subprogrammes

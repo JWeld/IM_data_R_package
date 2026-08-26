@@ -57,3 +57,15 @@ test_that("an error page names the version asked for, not the pinned one", {
   )
   expect_match(fetch_and_catch("99"), "99")
 })
+
+test_that("an empty download is refused rather than cached", {
+  local_mocked_bindings(
+    curl_download = function(url, destfile, ...) {
+      file.create(destfile)
+      destfile
+    },
+    .package = "curl"
+  )
+  err <- fetch_and_catch("1")
+  expect_match(err, "empty file")
+})

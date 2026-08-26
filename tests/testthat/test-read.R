@@ -148,3 +148,74 @@ test_that("unknown subprogramme codes fail with a useful message", {
   expect_equal(resolve_subprog("PC_precipitation_chemistry.csv"), "PC")
   expect_length(resolve_subprog("all", several.ok = TRUE), 21)
 })
+
+# The provenance record must state what was done, not what is plausible ----
+
+test_that("sodium_corrected counts only rows actually repaired and returned", {
+  cache <- withr::local_tempdir()
+  withr::local_options(icpim.cache_dir = cache)
+  fn <- im_subprogrammes$file[im_subprogrammes$subprog == "PC"]
+  # Keep every repository lookup offline.
+  local_mocked_bindings(im_api_dataset = function(version = NULL) NULL)
+
+  # A version-2-style file: sodium already carries its code. Forcing the
+  # repair must not claim credit for rows it never touched.
+  dir.create(file.path(cache, "v2"))
+  writeLines(
+    c("COUNTRY,AREA,SUBST,VALUE,YYYYMM",
+      "SE,SE14,NA,1.5,201501",
+      "SE,SE14,NA,1.7,201502",
+      "SE,SE14,CL,2.0,201501"),
+    file.path(cache, "v2", fn)
+  )
+  out <- im_read("PC", version = "2", repair = TRUE, quiet = TRUE, decode = FALSE)
+  expect_identical(im_provenance(out)$sodium_corrected, 0L)
+
+  # A version-1-style file with genuine blanks: the count follows the rows
+  # through filtering rather than reporting the file-level total.
+  dir.create(file.path(cache, "v1"))
+  writeLines(
+    c("COUNTRY,AREA,SUBST,VALUE,YYYYMM",
+      "SE,SE14,,1.5,201501",
+      "SE,SE14,,1.7,201502",
+      "SE,SE14,CL,2.0,201501"),
+    file.path(cache, "v1", fn)
+  )
+  all_rows <- im_read("PC", version = "1", quiet = TRUE, decode = FALSE)
+  expect_identical(im_provenance(all_rows)$sodium_corrected, 2L)
+
+  only_na <- im_read("PC", version = "1", substances = "NA",
+                     quiet = TRUE, decode = FALSE)
+  expect_identical(im_provenance(only_na)$sodium_corrected, 2L)
+
+  only_cl <- im_read("PC", version = "1", substances = "CL",
+                     quiet = TRUE, decode = FALSE)
+  expect_identical(im_provenance(only_cl)$sodium_corrected, 0L)
+
+  # And left as published, nothing is claimed.
+  untouched <- im_read("PC", version = "1", repair = FALSE,
+                       quiet = TRUE, decode = FALSE)
+  expect_identical(im_provenance(untouched)$sodium_corrected, 0L)
+})
+
+test_that("im_read survives a repository record with no DOI", {
+  cache <- withr::local_tempdir()
+  withr::local_options(icpim.cache_dir = cache)
+  fn <- im_subprogrammes$file[im_subprogrammes$subprog == "PC"]
+  dir.create(file.path(cache, "v9"))
+  writeLines(
+    c("COUNTRY,AREA,SUBST,VALUE,YYYYMM", "SE,SE14,CL,2.0,201501"),
+    file.path(cache, "v9", fn)
+  )
+  # The record exists but carries no doi field: the read must complete, with
+  # the provenance admitting the DOI is unknown rather than crashing after
+  # the data was already parsed.
+  local_mocked_bindings(
+    im_api_dataset = function(version = NULL) list(versionNumber = "9")
+  )
+  out <- im_read("PC", version = "9", quiet = TRUE, decode = FALSE)
+  p <- im_provenance(out)
+  expect_identical(p$dataset_version, "9")
+  expect_true(is.na(p$doi))
+  expect_identical(p$rows_read, 1L)
+})

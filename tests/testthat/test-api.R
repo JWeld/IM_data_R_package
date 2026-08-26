@@ -122,3 +122,73 @@ test_that("a missing subprogramme code gets the package's own error", {
   expect_equal(resolve_subprog("all", several.ok = TRUE),
                im_subprogrammes$subprog)
 })
+
+# Robustness to the repository's answers ----------------------------------
+# The API is not under this package's control, and it has form for odd
+# replies: it answers 200 with a null body for versions that do not exist.
+# A record missing a field must degrade, never crash.
+
+test_that("im_check_version handles version strings as.numeric cannot", {
+  withr::local_options(icpim.version = "1")
+
+  # "2.0.1" is NA to as.numeric(); the old comparison crashed the printing
+  # path on exactly the kind of version the check exists to discover.
+  local_mocked_bindings(im_latest_version = function() "2.0.1")
+  res <- im_check_version(quiet = TRUE)
+  expect_true(res$newer_available)
+  expect_message(im_check_version(quiet = FALSE), "2.0.1")
+
+  # Unparseable strings compare FALSE rather than NA.
+  local_mocked_bindings(im_latest_version = function() "not-a-version")
+  res <- im_check_version(quiet = TRUE)
+  expect_false(res$newer_available)
+})
+
+test_that("version_newer orders dotted versions correctly", {
+  expect_true(version_newer("2.0.1", "1"))
+  expect_true(version_newer("1.1", "1"))
+  expect_false(version_newer("1", "2"))
+  expect_false(version_newer("1", "1"))
+  expect_false(version_newer("garbage", "1"))
+})
+
+test_that("a record missing fields degrades to NA rather than erroring", {
+  local_mocked_bindings(
+    im_api_dataset = function(version = NULL) list(versionNumber = "9")
+  )
+
+  info <- im_dataset_info("9")
+  expect_identical(info$doi, NA_character_)
+  expect_identical(info$version, "9")
+  expect_true(is.na(info$year))
+  expect_true(is.na(info$url))
+
+  expect_warning(d <- im_doi("9"), "could not be determined")
+  expect_identical(d, NA_character_)
+
+  # The citation falls back to the concept DOI rather than printing nothing.
+  txt <- paste(capture.output(im_cite("9")), collapse = " ")
+  expect_match(txt, "cannot be cited")
+  expect_match(txt, IM_DOI_CONCEPT, fixed = TRUE)
+})
+
+test_that("a file list without sizes still yields a manifest", {
+  local_mocked_bindings(
+    im_api_dataset = function(version = NULL) {
+      list(versionNumber = "9",
+           file = list(name = "PC_precipitation_chemistry.csv", type = "data"))
+    }
+  )
+  man <- im_manifest("9")
+  expect_equal(nrow(man), 1L)
+  expect_identical(man$subprog, "PC")
+  expect_true(is.na(man$size_mb))
+})
+
+test_that("a record with no file list falls back to the bundled catalogue", {
+  local_mocked_bindings(
+    im_api_dataset = function(version = NULL) list(versionNumber = "9")
+  )
+  expect_warning(man <- im_manifest("9"), "bundled catalogue")
+  expect_equal(nrow(man), 21L)
+})
