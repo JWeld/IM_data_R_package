@@ -162,10 +162,12 @@ im_manifest <- function(version = im_version(),
   type <- match.arg(type)
   d <- im_api_dataset(as.character(version))
 
-  # A record can arrive without its file list, not only not at all; both mean
-  # the same thing here - the repository's answer is unusable.
+  # A record can arrive without its file list, not only not at all - or with
+  # a list that has no names or no types, which leaves every typed view of it
+  # empty. All of these mean the same thing here: the repository's answer is
+  # unusable.
   f <- if (is.null(d)) NULL else d$file
-  if (is.null(f) || is.null(f$name) || !length(f$name)) {
+  if (is.null(f) || is.null(f$name) || !length(f$name) || is.null(f$type)) {
     cli::cli_warn(c(
       "Could not read the file list from the repository; using the bundled
        catalogue.",
@@ -184,10 +186,8 @@ im_manifest <- function(version = im_version(),
   nm <- as.character(f$name)
   out <- tibble::tibble(
     file    = nm,
-    type    = if (is.null(f$type)) rep(NA_character_, length(nm))
-              else as.character(f$type),
-    size_mb = if (is.null(f$contentSize)) rep(NA_real_, length(nm))
-              else round(suppressWarnings(as.numeric(f$contentSize)) / 1024^2, 2)
+    type    = as.character(f$type),
+    size_mb = round(num_n(f$contentSize, length(nm)) / 1024^2, 2)
   )
   # %in%, not ==: an NA type must not become an NA subscript downstream.
   out$subprog <- ifelse(
@@ -203,7 +203,7 @@ im_manifest <- function(version = im_version(),
     derived[is.na(out$name) & !is.na(out$subprog)]
 
   out <- out[, c("subprog", "name", "file", "type", "size_mb")]
-  out <- out[order(!is.na(out$subprog) == FALSE, out$file), ]
+  out <- out[order(is.na(out$subprog), out$file), ]
 
   switch(type,
     data          = out[out$type %in% "data", ],

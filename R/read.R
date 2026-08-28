@@ -140,11 +140,13 @@ im_read <- function(subprog,
   }
   attr(out, "icpim_blank_subst") <- NULL
 
-  # Which returned rows the sodium repair touched. Kept as a mask alongside
-  # the table so every filter below narrows both together; the provenance
-  # count at the end is then over rows actually repaired and actually
-  # returned, so a correctly coded file reports zero even under repair = TRUE.
-  repaired <- seq_len(nrow(out)) %in% (attr(out, "icpim_repaired_rows") %||% integer(0))
+  # Which returned rows the sodium repair touched. Carried as a column so it
+  # rides through every filter below with the table, rather than as a mask a
+  # future filter could forget to narrow; the provenance count at the end is
+  # then over rows actually repaired and actually returned, so a correctly
+  # coded file reports zero even under repair = TRUE.
+  out$.icpim_repaired <- seq_len(nrow(out)) %in%
+    (attr(out, "icpim_repaired_rows") %||% integer(0))
   attr(out, "icpim_repaired_rows") <- NULL
 
   # Filters, applied before decoding so the joins are as small as possible.
@@ -155,7 +157,6 @@ im_read <- function(subprog,
     require_col(out, "AREA", "sites")
     keep <- toupper(out$AREA) %in% toupper(sites)
     out <- filter_rows(out, keep, "sites", sites, out$AREA)
-    repaired <- repaired[keep]
   }
   if (!is.null(countries)) {
     require_col(out, "AREA", "countries")
@@ -167,21 +168,21 @@ im_read <- function(subprog,
     keep <- iso %in% cc | (!is.na(full) & full %in% cc)
     out <- filter_rows(out, keep, "countries", countries,
                        unique(c(substr(out$AREA, 1, 2), out$COUNTRY)))
-    repaired <- repaired[keep]
   }
   if (!is.null(years)) {
     require_col(out, "year", "years")
     keep <- !is.na(out$year) & out$year %in% years
     out <- filter_rows(out, keep, "years", years, out$year)
-    repaired <- repaired[keep]
   }
   if (!is.null(substances)) {
     key <- im_key_col(out)
     require_col(out, key, "substances")
     keep <- !is.na(out[[key]]) & out[[key]] %in% substances
     out <- filter_rows(out, keep, "substances", substances, out[[key]])
-    repaired <- repaired[keep]
   }
+
+  repaired <- sum(out$.icpim_repaired)
+  out$.icpim_repaired <- NULL
 
   if (isTRUE(decode)) out <- im_decode(out, quiet = quiet, version = version)
 
@@ -213,7 +214,7 @@ im_read <- function(subprog,
     # Rows this call actually repaired and actually returned - not a count of
     # "NA" codes, which from version 2 onwards the file carries legitimately
     # and this package never touched.
-    sodium_corrected = sum(repaired)
+    sodium_corrected = repaired
   )
 }
 
@@ -260,16 +261,16 @@ im_read_file <- function(path, repair = TRUE, quiet = TRUE) {
   # Both code columns, not just SUBST. Sodium is measured in tree biomass too,
   # where the determinand column is PARAM: three rows of BI carry the blank in
   # version 1, and they belong to the same issue.
-  n_blank <- 0L
   blank_rows <- integer(0)
   for (col in intersect(c("SUBST", "PARAM"), names(raw))) {
     blank <- !is.na(raw[[col]]) & !nzchar(trimws(raw[[col]]))
-    n <- sum(blank)
-    if (n == 0L) next
-    n_blank <- n_blank + n
+    if (!any(blank)) next
     blank_rows <- union(blank_rows, which(blank))
     if (isTRUE(repair)) raw[[col]][blank] <- "NA"
   }
+  # Rows, not cells: a row blank in both SUBST and PARAM is one repaired row,
+  # so every count reported here agrees with sodium_corrected.
+  n_blank <- length(blank_rows)
   if (isTRUE(repair) && n_blank > 0 && !quiet && !isTRUE(the$warned_sodium)) {
     the$warned_sodium <- TRUE
     cli::cli_alert_info(c(

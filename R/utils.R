@@ -10,6 +10,19 @@ chr1 <- function(x) {
   if (!length(x) || is.na(x[[1]]) || !nzchar(x[[1]])) NA_character_ else x[[1]]
 }
 
+# A numeric vector of length n from an API field. jsonlite hands back a list
+# column when a JSON array mixes null with numbers, and as.numeric() on a
+# list errors rather than warns. A field of the wrong length degrades to all
+# unknown, never to sizes smeared across the wrong files.
+num_n <- function(x, n) {
+  if (is.null(x)) return(rep(NA_real_, n))
+  out <- vapply(x, function(v) {
+    v <- tryCatch(suppressWarnings(as.numeric(v)), error = function(e) NA_real_)
+    if (length(v) == 1L) v else NA_real_
+  }, numeric(1))
+  if (length(out) == n) out else rep(NA_real_, n)
+}
+
 # Internal accessor so package code does not depend on lazy-data promises
 # being visible to R CMD check.
 subprog_meta <- function() icpim::im_subprogrammes
