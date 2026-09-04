@@ -12,10 +12,120 @@ test_that("the bundled catalogue holds only version-stable columns", {
                    %in% names(im_subprogrammes)))
 })
 
-test_that("the pinned version is the one the bundled tables came from", {
-  # If these diverge, the bundled lookups silently describe a different
-  # release from the one being read.
+# Resolving "latest" -------------------------------------------------------
+# The default reads the newest published release, looked up once per session.
+# What it must never do is quietly read something else without saying so.
+
+local_latest <- function(env = parent.frame()) {
+  # A clean slate: no remembered resolution, the "latest" default, a cache of
+  # our own, and no chatter.
+  withr::defer(reset_session_state(), envir = env)
+  reset_session_state()
+  withr::local_options(icpim.version = "latest", icpim.quiet = TRUE,
+                       icpim.cache_dir = withr::local_tempdir(.local_envir = env),
+                       .local_envir = env)
+}
+
+test_that("the default follows the newest published release", {
+  local_latest()
+  local_mocked_bindings(im_latest_version = function() "7")
+  expect_equal(im_version(), "7")
+  # Every default `version` argument goes through the same resolution.
+  expect_equal(im_cache_dir(), file.path(getOption("icpim.cache_dir"), "v7"))
+  expect_match(im_file_url("x.csv"), "2024-180/7/data")
+})
+
+test_that("'latest' is resolved once per session, then fixed", {
+  local_latest()
+  calls <- 0L
+  local_mocked_bindings(im_latest_version = function() { calls <<- calls + 1L; "7" })
+  im_version(); im_version(); im_cache_dir()
+  expect_equal(calls, 1L)
+  # A newer release appearing mid-session does not move a running analysis.
+  local_mocked_bindings(im_latest_version = function() "8")
+  expect_equal(im_version(), "7")
+  # Until the state is reset, which is what a new session is.
+  reset_session_state()
+  expect_equal(im_version(), "8")
+})
+
+test_that("the first resolution says which release it settled on", {
+  local_latest()
+  withr::local_options(icpim.quiet = FALSE)
+  local_mocked_bindings(im_latest_version = function() "7")
+  expect_message(im_version(), "newest release")
+  expect_no_message(im_version())
+})
+
+test_that("offline, 'latest' falls back to the newest cached release", {
+  local_latest()
+  local_mocked_bindings(im_latest_version = function() NA_character_)
+  root <- getOption("icpim.cache_dir")
+  for (v in c("v1", "v3", "v10")) {
+    dir.create(file.path(root, v), recursive = TRUE)
+    file.create(file.path(root, v, "PC_precipitation_chemistry.csv"))
+  }
+  dir.create(file.path(root, "v11"))          # empty: nothing to read there
+  dir.create(file.path(root, "v12.part"))     # not a version directory
+  expect_equal(newest_cached_version(), "10") # numeric, not lexical
+  withr::local_options(icpim.quiet = FALSE)
+  expect_message(v <- im_version(), "newest release in the cache")
+  expect_equal(v, "10")
+})
+
+test_that("offline with an empty cache, 'latest' falls back to the bundled release", {
+  local_latest()
+  local_mocked_bindings(im_latest_version = function() NA_character_)
+  withr::local_options(icpim.quiet = FALSE)
+  expect_message(v <- im_version(), "built against")
+  expect_equal(v, IM_BUNDLED_VERSION)
+  # And that decodes without a fetch or a warning.
+  expect_no_warning(codes_for("substances"))
+})
+
+test_that("'latest' works when passed as an explicit version argument", {
+  local_latest()
+  local_mocked_bindings(im_latest_version = function() "7")
+  expect_equal(resolve_version("latest"), "7")
+  expect_equal(resolve_version("LATEST"), "7")
+  expect_match(im_file_url("x.csv", version = "latest"), "2024-180/7/data")
+  # A concrete version passes through untouched, whatever the session reads.
+  expect_equal(resolve_version("1"), "1")
+  expect_equal(resolve_version(2), "2")
+})
+
+test_that("an empty or missing version setting means the default", {
+  local_latest()
+  local_mocked_bindings(im_latest_version = function() "7")
+  expect_equal(resolve_version(NULL), "7")
+  expect_equal(resolve_version(""), "7")
+  expect_equal(resolve_version(NA), "7")
+})
+
+test_that("im_check_version tells a session that started offline about the newer release", {
+  local_latest()
+  local_mocked_bindings(im_latest_version = function() NA_character_)
   expect_equal(im_version(), IM_BUNDLED_VERSION)
+  local_mocked_bindings(im_latest_version = function() "9")
+  expect_message(chk <- im_check_version(), "settled on")
+  expect_true(chk$newer_available)
+  expect_equal(chk$current, IM_BUNDLED_VERSION)
+})
+
+test_that("im_check_version is quiet about a session already reading the newest", {
+  local_latest()
+  local_mocked_bindings(im_latest_version = function() "7")
+  chk <- im_check_version(quiet = TRUE)
+  expect_false(chk$newer_available)
+  expect_equal(chk$current, "7")
+})
+
+test_that("the bundled release resolves without touching the network", {
+  # If this needed the repository, every offline session would warn.
+  local_mocked_bindings(im_api_dataset = function(version = NULL) stop("no network"))
+  expect_equal(nrow(known_subprogs(IM_BUNDLED_VERSION)), 21L)
+  expect_no_warning(codes_for("substances", IM_BUNDLED_VERSION))
+  expect_equal(im_dataset_info(IM_BUNDLED_VERSION)$doi, IM_BUNDLED_INFO$doi)
 })
 
 test_that("subprogrammes resolve from the bundled catalogue without network", {
@@ -105,7 +215,7 @@ test_that("a version that does not exist is reported as absent, not as an error"
   expect_true(im_version_exists("1"))
 })
 
-test_that("im_check_version compares the pinned version with the newest", {
+test_that("im_check_version compares the version being read with the newest", {
   skip_on_cran()
   skip_if_offline()
   chk <- im_check_version(quiet = TRUE)

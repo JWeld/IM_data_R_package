@@ -48,7 +48,9 @@ sodium.}
 silence the warning raised when a filter matches nothing, which is a
 diagnostic rather than progress; use \code{\link[=suppressWarnings]{suppressWarnings()}} for that.}
 
-\item{version}{Dataset version. Defaults to \code{\link[=im_version]{im_version()}}.}
+\item{version}{Dataset version. Defaults to \code{\link[=im_version]{im_version()}}, which is the
+newest published release unless you have pinned one with
+\code{options(icpim.version=)}.}
 }
 \value{
 A \link[tibble:tibble]{tibble} with one row per published observation.

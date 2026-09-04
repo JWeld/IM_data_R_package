@@ -90,7 +90,7 @@ build_code_tables <- function(raw) {
 
 #' Fetch the code lists published with a given version
 #'
-#' The lookups bundled with this package come from version 1. A later release
+#' The lookups bundled with this package come from one release. A later release
 #' can add substances, parameters, methods or sites, so for any other version
 #' the published lists are downloaded and cached, then used in preference to
 #' the bundled ones.
@@ -117,6 +117,7 @@ build_code_tables <- function(raw) {
 #' }
 im_update_codes <- function(version = im_version(), quiet = NULL) {
   quiet <- quiet %||% getOption("icpim.quiet", FALSE)
+  version <- resolve_version(version)
   dest <- code_cache_path(version)
 
   raw <- list()
@@ -159,6 +160,7 @@ code_cache_path <- function(version) {
 # The lookup table to use for a given version: cached published lists if we
 # have them, otherwise the bundled ones.
 codes_for <- function(which, version = im_version()) {
+  version <- resolve_version(version)
   bundled <- switch(which,
     substances     = im_substances,
     parameters     = im_parameters,
@@ -166,7 +168,7 @@ codes_for <- function(which, version = im_version()) {
     pretreatments  = im_pretreatments,
     sites          = im_sites
   )
-  if (identical(as.character(version), IM_BUNDLED_VERSION)) return(bundled)
+  if (identical(version, IM_BUNDLED_VERSION)) return(bundled)
 
   p <- code_cache_path(version)
   if (!file.exists(p)) {

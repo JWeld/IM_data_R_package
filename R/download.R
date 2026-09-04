@@ -49,6 +49,7 @@
 im_download <- function(subprog, overwrite = FALSE, quiet = NULL,
                         version = im_version()) {
   quiet <- quiet %||% getOption("icpim.quiet", FALSE)
+  version <- resolve_version(version)
   codes <- resolve_subprog(subprog, several.ok = TRUE, version = version)
   meta  <- known_subprogs(version)
   meta  <- meta[match(codes, meta$subprog), ]
@@ -101,12 +102,18 @@ fetch_file <- function(url, dest, quiet = TRUE, version = im_version()) {
       TRUE
     },
     error = function(e) {
-      # Three quite different causes, and the advice differs completely
-      # between them: no connection, a release that was never published, or a
-      # file that has moved within a release that exists. A 404 blamed on the
-      # network sends the reader looking in the wrong place.
+      # Four quite different causes, and the advice differs completely
+      # between them: no connection, a repository that cannot be reached, a
+      # release that was never published, or a file that has moved within a
+      # release that exists. A 404 blamed on the network sends the reader
+      # looking in the wrong place - and an outage blamed on the version
+      # sends them re-pinning a release that exists. The existence check
+      # cannot tell absent from unreachable on its own, so ask about the
+      # dataset as a whole first.
       cause <- if (!curl::has_internet()) {
         c("i" = "There is no network connection.")
+      } else if (is.null(im_api_dataset(NULL))) {
+        c("i" = "The repository could not be reached. Try again later.")
       } else if (!im_version_exists(version)) {
         c("i" = "Version {.val {version}} is not published.",
           "i" = "Pin one that is with {.code options(icpim.version = ...)};
@@ -123,7 +130,7 @@ fetch_file <- function(url, dest, quiet = TRUE, version = im_version()) {
           cause,
           "i" = paste(
             "The files can also be downloaded by hand from",
-            "{.url https://doi.org/10.5878/z376-2m63} into",
+            "{.url https://doi.org/{IM_DOI_CONCEPT}} into",
             "{.path {dirname(dest)}}."
           )
         ),
@@ -142,7 +149,7 @@ fetch_file <- function(url, dest, quiet = TRUE, version = im_version()) {
       cli::cli_abort(
         c("The server returned an empty file for {.url {url}}.",
           "i" = "Nothing was cached. Try again, or download by hand from
-                 {.url https://doi.org/10.5878/z376-2m63}."),
+                 {.url https://doi.org/{IM_DOI_CONCEPT}}."),
         call = NULL
       )
     }
@@ -161,6 +168,7 @@ fetch_file <- function(url, dest, quiet = TRUE, version = im_version()) {
 
 # Path to a cached file, downloading it first if needed.
 im_local_path <- function(subprog, version = im_version(), quiet = NULL) {
+  version <- resolve_version(version)
   code <- resolve_subprog(subprog, version = version)
   file <- subprog_file(code, version)
   dest <- file.path(im_cache_dir(version, create = FALSE), file)

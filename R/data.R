@@ -22,7 +22,7 @@
 #'   \item{collection}{Reporting format group: `CHEM`, `BIO1` or `BIO2`}
 #'   \item{key}{Column holding the determinand: `SUBST` or `PARAM`}
 #' }
-#' @source \doi{10.5878/z376-2m63}
+#' @source \doi{10.5878/x6fn-gw26}
 #' @seealso [im_manifest()] and [im_coverage()] for the version-specific facts.
 #' @examples
 #' im_subprogrammes
@@ -44,7 +44,7 @@
 #'   \item{latitude, longitude}{Decimal degrees, WGS 84}
 #'   \item{active}{Whether the site was still active at publication}
 #' }
-#' @source \doi{10.5878/z376-2m63}
+#' @source \doi{10.5878/x6fn-gw26}
 #' @examples
 #' subset(im_sites, country == "SE")
 "im_sites"
@@ -66,7 +66,7 @@
 #'   \item{cas}{CAS registry number, where known}
 #'   \item{description}{Free-text description, where given}
 #' }
-#' @source \doi{10.5878/z376-2m63}
+#' @source \doi{10.5878/x6fn-gw26}
 #' @examples
 #' subset(im_substances, code == "NA")
 "im_substances"
@@ -86,7 +86,7 @@
 #'   \item{unit}{Suggested unit}
 #'   \item{minimum, maximum}{Plausible range, where published}
 #' }
-#' @source \doi{10.5878/z376-2m63}
+#' @source \doi{10.5878/x6fn-gw26}
 #' @examples
 #' subset(im_parameters, subprog == "VG")
 "im_parameters"
@@ -94,13 +94,13 @@
 #' Determination method codes
 #'
 #' @format A tibble with 3 columns: `code`, `name` and `note`.
-#' @source \doi{10.5878/z376-2m63}
+#' @source \doi{10.5878/x6fn-gw26}
 "im_determinations"
 
 #' Pretreatment method codes
 #'
 #' @format A tibble with 2 columns: `code` and `name`.
-#' @source \doi{10.5878/z376-2m63}
+#' @source \doi{10.5878/x6fn-gw26}
 "im_pretreatments"
 
 #' Quality and status flags

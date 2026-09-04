@@ -29,6 +29,7 @@
 #' }
 #' }
 im_coverage <- function(subprog = "all", version = im_version(), quiet = NULL) {
+  version <- resolve_version(version)
   quiet <- quiet %||% getOption("icpim.quiet", FALSE)
   codes <- resolve_subprog(subprog, several.ok = TRUE, version = version)
   meta  <- known_subprogs(version)

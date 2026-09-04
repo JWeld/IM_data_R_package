@@ -1,5 +1,5 @@
-# A failed download has three quite different causes, and the advice differs
-# completely between them. Blaming the network for all three sends a reader
+# A failed download has four quite different causes, and the advice differs
+# completely between them. Blaming the network for all of them sends a reader
 # looking in the wrong place.
 
 fetch_and_catch <- function(version) {
@@ -17,10 +17,28 @@ test_that("a version that is not published is not blamed on the network", {
     has_internet = function(...) TRUE,
     .package = "curl"
   )
+  # The repository answers, so an absent version really is absent.
+  local_mocked_bindings(im_api_dataset = function(version = NULL) list(doi = "x"))
   local_mocked_bindings(im_version_exists = function(version) FALSE)
 
   err <- fetch_and_catch("99")
   expect_match(err, "not published")
+  expect_no_match(err, "no network connection")
+})
+
+test_that("an unreachable repository is not mistaken for an unpublished version", {
+  # Network up, repository down: the existence check cannot tell absent from
+  # unreachable, and used to tell the reader to re-pin a release that exists.
+  local_mocked_bindings(
+    curl_download = function(...) stop("Could not connect to server"),
+    has_internet = function(...) TRUE,
+    .package = "curl"
+  )
+  local_mocked_bindings(im_api_dataset = function(version = NULL) NULL)
+
+  err <- fetch_and_catch("2")
+  expect_match(err, "could not be reached")
+  expect_no_match(err, "not published")
   expect_no_match(err, "no network connection")
 })
 
@@ -30,6 +48,7 @@ test_that("a file missing from a release that does exist says so", {
     has_internet = function(...) TRUE,
     .package = "curl"
   )
+  local_mocked_bindings(im_api_dataset = function(version = NULL) list(doi = "x"))
   local_mocked_bindings(im_version_exists = function(version) TRUE)
 
   err <- fetch_and_catch("1")

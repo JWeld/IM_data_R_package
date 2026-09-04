@@ -9,7 +9,7 @@
 Access the open dataset of the **International Cooperative Programme on
 Integrated Monitoring of Air Pollution Effects on Ecosystems (ICP IM)** from R.
 
-The dataset ([doi:10.5878/z376-2m63](https://doi.org/10.5878/z376-2m63))
+The dataset ([doi:10.5878/x6fn-gw26](https://doi.org/10.5878/x6fn-gw26))
 publishes long-term integrated ecosystem monitoring from European forested
 catchments: 21 subprogrammes, 55 sites in 14 countries, roughly 1.2 million
 observations from 1967 to 2020, covering deposition, soil, soil water,
@@ -79,12 +79,27 @@ with maximum *daily* sums.
 
 `vignette("icpim")` covers each of these.
 
-## Reproducibility
+## Versions and reproducibility
 
-The deposit is updated (at least) annually and each release has its own DOI. `icpim` pins
-version 1 by default so scripts keep returning the same numbers; move
-deliberately with `options(icpim.version = "2")`. The cache is keyed by
-version, so releases are never mixed.
+The deposit is updated (at least) annually and each release has its own DOI.
+By default `icpim` reads the **newest published release**: the first time a
+session needs a version it asks the repository which is newest, and then
+reads that one for the rest of the session. A new release therefore needs no
+change to this package or to your code. If the repository cannot be reached,
+the session reads the newest release already in its cache, or failing that the
+release the package was built against, and says so.
+
+That is the right default for exploring the data and the wrong one for an
+analysis that must keep returning the same numbers, because annual releases
+revise past values as well as adding new ones. Pin the release you analysed:
+
+```r
+options(icpim.version = "2")
+```
+
+`im_provenance()` records which release an object came from, and `im_cite()`
+prints that release's DOI. The cache is keyed by version, so releases are
+never mixed.
 
 `im_read()` downloads what it needs, so it is the only function you need to
 get data. Files are cached under `tools::R_user_dir("icpim", "cache")`; set
@@ -93,9 +108,9 @@ self-contained. `im_download()` is for the cache rather than for data - it
 returns paths, not rows - and is worth knowing for one case: `im_download("all")`
 fetches all 21 files (about 95 MB) so you can work offline afterwards.
 
-`im_check_version()` tells you whether a newer release has appeared. The
-package never moves on its own, since that would change the numbers an
-analysis returns. Nothing version-specific is hard-coded: the file list and
+`im_check_version()` tells you whether a newer release exists than the one
+you are reading, which matters once you have pinned one. Nothing
+version-specific is hard-coded: the file list and
 sizes come from `im_manifest()`, row counts and year ranges from
 `im_coverage()`, and code lists for an unfamiliar release are fetched on
 first use. A renamed file, an added subprogramme or a new substance code
@@ -117,8 +132,8 @@ The deposit DOI follows, identifying the particular annual release analysed:
 
 > Weldon, J. et al. (2026). The International Cooperative Programme on
 > Integrated Monitoring of Air Pollution Effects on Ecosystems (ICP IM),
-> version 1. ICP Integrated Monitoring Programme Centre.
-> <https://doi.org/10.5878/z376-2m63>
+> version 2. ICP Integrated Monitoring Programme Centre.
+> <https://doi.org/10.5878/kdf4-n452>
 
 Neither is the citation for this R package, which is `citation("icpim")`. 
 

@@ -24,9 +24,15 @@ test_that("listing an empty cache gives zero rows, not an error", {
   })
 })
 
-test_that("version pinning is explicit and reported", {
-  expect_equal(im_version(), "1")
+test_that("a pinned version is read as written", {
+  withr::with_options(list(icpim.version = "1"), {
+    expect_equal(im_version(), "1")
+  })
   withr::with_options(list(icpim.version = "2"), {
+    expect_equal(im_version(), "2")
+  })
+  # Numbers are accepted too, and never reach a URL as "2.0".
+  withr::with_options(list(icpim.version = 2), {
     expect_equal(im_version(), "2")
   })
 })
@@ -38,7 +44,7 @@ test_that("file URLs are built against the pinned version", {
 })
 
 test_that("the DOIs are the published ones", {
-  expect_equal(im_doi(), "10.5878/z376-2m63")
+  expect_equal(im_doi(IM_BUNDLED_VERSION), IM_BUNDLED_INFO$doi)
   expect_equal(im_doi(concept = TRUE), "10.5878/x6fn-gw26")
 })
 

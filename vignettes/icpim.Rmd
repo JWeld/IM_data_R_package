@@ -15,7 +15,7 @@ library(icpim)
 The ICP Integrated Monitoring programme has measured whole forested catchments
 since the late 1980s - deposition, soil, soil water, groundwater, runoff,
 vegetation and biota at the same plots, year after year. The open dataset
-([doi:10.5878/z376-2m63](https://doi.org/10.5878/z376-2m63)) publishes that
+([doi:10.5878/x6fn-gw26](https://doi.org/10.5878/x6fn-gw26)) publishes that
 record as 21 CSV files, one per subprogramme, covering 55 sites in 14 countries
 and about 1.2 million observations.
 
@@ -35,7 +35,7 @@ reads the current file list and sizes from the repository, and `im_coverage()`
 measures rows, sites and year ranges from the data itself.
 
 ```{r, eval = FALSE}
-im_manifest()        # file list and sizes for the pinned version
+im_manifest()        # file list and sizes for the version being read
 im_coverage("MC")    # what one subprogramme actually contains
 ```
 
@@ -228,25 +228,35 @@ survives `filter()`, `mutate()`, `select()`, `arrange()`, `im_widen()` and
 reloaded. It is dropped by `summarise()` and by joins, which build a genuinely
 new table; capture it first if you need it afterwards.
 
-## Reproducibility
+## Versions and reproducibility
 
 The deposit is updated annually, and each release is a new version with its
-own DOI. `icpim` pins version 1 so that a script keeps returning the same
-numbers:
+own DOI. By default `icpim` reads the newest published release: the first
+time a session needs a version it asks the repository which is newest, and
+reads that one for the rest of the session. A new release therefore needs no
+change to the package or to your code. Offline, the session reads the newest
+release already in its cache, or failing that the release the package was
+built against, and says so.
 
-```{r}
-im_version()
-im_doi()
+```{r, eval = FALSE}
+im_version()   # e.g. "2": the newest release, resolved once per session
+im_doi()       # its DOI
 ```
 
-Each release has its own DOI, and these follow the pinned version, so what you
-cite is always what you read. Record both in your output.
+That default is right for exploring the data and wrong for an analysis that
+must keep returning the same numbers: annual updates revise past values as
+well as adding new ones. Pin the release you analysed, and record it:
 
-`im_check_version()` reports whether a newer release has appeared. The package
-never follows it on its own: annual updates revise past values as well as
-adding new ones, so moving would change the numbers an existing analysis
-returns. Move deliberately with `options(icpim.version = "2")`. The cache is
-keyed by version, so files from two releases are never mixed.
+```{r, eval = FALSE}
+options(icpim.version = "2")
+```
+
+Each release has its own DOI, and `im_doi()` and `im_cite()` follow the
+version being read, so what you cite is always what you read. The provenance
+record above carries the version with the data. `im_check_version()` reports
+whether a newer release exists than the one you are reading; a pinned session
+never moves on its own. The cache is keyed by version, so files from two
+releases are never mixed.
 
 ## Citing this work
 

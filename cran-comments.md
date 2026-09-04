@@ -3,7 +3,7 @@
 icpim 0.1.0. This is a new submission.
 
 The package provides access to an openly licensed (CC BY 4.0) research
-dataset published at <doi:10.5878/z376-2m63>, described in Scientific Data
+dataset published at <doi:10.5878/x6fn-gw26>, described in Scientific Data
 <doi:10.1038/s41597-026-07181-8>.
 
 ## R CMD check results
@@ -81,7 +81,7 @@ user who prefers otherwise can set `options(icpim.cache_dir = ...)` or the
 
 The package is MIT licensed. The lookup tables in `data/` and the small data
 extracts in `inst/extdata` are derived from the ICP Integrated Monitoring open
-dataset <doi:10.5878/z376-2m63>, which is CC BY 4.0. This is stated in the
+dataset <doi:10.5878/x6fn-gw26>, which is CC BY 4.0. This is stated in the
 `Copyright` field of DESCRIPTION and in the documentation of each dataset, and
 the programme that collects the data is credited with a `dtc` role in
 `Authors@R`.

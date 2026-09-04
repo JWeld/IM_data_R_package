@@ -80,7 +80,9 @@ IM_NUMERIC_COLS <- c(
 #' @param quiet Logical. Suppress progress and one-time notes. It does not
 #'   silence the warning raised when a filter matches nothing, which is a
 #'   diagnostic rather than progress; use [suppressWarnings()] for that.
-#' @param version Dataset version. Defaults to [im_version()].
+#' @param version Dataset version. Defaults to [im_version()], which is the
+#'   newest published release unless you have pinned one with
+#'   `options(icpim.version=)`.
 #'
 #' @return A [tibble][tibble::tibble] with one row per published observation.
 #'   A filter that matches nothing returns an empty table and warns, rather
@@ -118,6 +120,7 @@ im_read <- function(subprog,
                     quiet = NULL,
                     version = im_version()) {
   quiet <- quiet %||% getOption("icpim.quiet", FALSE)
+  version <- resolve_version(version)
   code  <- resolve_subprog(subprog, version = version)
   path  <- im_local_path(code, version = version, quiet = quiet)
 

@@ -71,7 +71,8 @@ resolve_subprog <- function(x, several.ok = FALSE, version = im_version()) {
 # release that adds a subprogramme works without changing this package.
 known_subprogs <- function(version = im_version()) {
   meta <- subprog_meta()
-  if (identical(as.character(version), IM_BUNDLED_VERSION)) return(meta)
+  version <- resolve_version(version)
+  if (identical(version, IM_BUNDLED_VERSION)) return(meta)
   man <- suppressWarnings(tryCatch(
     im_manifest(version, "data"),
     error = function(e) NULL

@@ -7,17 +7,35 @@
 im_version()
 }
 \value{
-A length-one character vector.
+A length-one character vector: a concrete version such as \code{"2"},
+never \code{"latest"}.
 }
 \description{
 The deposit is updated annually and each update is a new version with its
-own DOI. \code{icpim} pins version 1 by default so that results stay
-reproducible; set \code{options(icpim.version = "2")} to move to a later one.
+own DOI. By default \code{icpim} reads the \strong{newest published release}: the
+option \code{icpim.version} is \code{"latest"}, which is looked up in the repository
+the first time a version is needed and then fixed for the rest of the
+session, so one session never mixes releases. A new release therefore needs
+no change to this package or to your code.
 }
 \details{
+That is the right default for exploring the data and the wrong one for an
+analysis that must keep returning the same numbers: annual releases revise
+past values as well as adding new ones. Pin the release you analysed with
+\code{options(icpim.version = "2")}, and record it - \code{\link[=im_provenance]{im_provenance()}} carries
+it with the data, and \code{\link[=im_cite]{im_cite()}} prints its DOI.
+
+If the repository cannot be reached when \code{"latest"} is resolved, the session
+reads the newest release already in the cache, or failing that the release
+this package was built against, and says so. \code{\link[=im_check_version]{im_check_version()}} reports
+when a newer release exists than the one being read.
+
 Changing the version changes the cache key, so files are re-downloaded
 rather than silently mixed across versions.
 }
 \examples{
+\donttest{
+# Resolving "latest" needs the repository the first time it is called.
 im_version()
+}
 }

@@ -1,10 +1,9 @@
 # Constants describing the published deposit -----------------------------
 
-# Each release has its own DOI. The one below belongs to version 1, the
-# release the bundled tables were built from; every other version's DOI is
-# looked up, never assumed. The concept DOI is version-independent and always
-# resolves to the newest release.
-IM_DOI_V1      <- "10.5878/z376-2m63"
+# Each release has its own DOI. The one recorded in IM_BUNDLED_INFO below
+# belongs to the release the bundled tables were built from; every other
+# version's DOI is looked up, never assumed. The concept DOI is
+# version-independent and always resolves to the newest release.
 IM_DOI_CONCEPT <- "10.5878/x6fn-gw26"
 IM_DATASET_ID  <- "2024-180"
 
@@ -31,14 +30,15 @@ IM_PAPER <- list(
   doi     = "10.1038/s41597-026-07181-8"
 )
 
-# Facts about version 1, so citing the pinned version works offline.
-IM_V1_INFO <- list(
+# Facts about the bundled release, so citing it works offline. Update these
+# together with IM_BUNDLED_VERSION when the bundled lookups are rebuilt.
+IM_BUNDLED_INFO <- list(
   title = paste(
     "The International Cooperative Programme on Integrated Monitoring of",
     "Air Pollution Effects on Ecosystems (ICP IM)"
   ),
-  doi       = IM_DOI_V1,
-  version   = "1",
+  doi       = "10.5878/kdf4-n452",
+  version   = IM_BUNDLED_VERSION,
   year      = "2026",
   publisher = IM_PUBLISHER,
   licence   = "CC BY 4.0"
@@ -52,11 +52,11 @@ IM_FILE_BASE <- "https://doris.snd.se/api/file"
 #' Returns the DOI, identifier and descriptive metadata for the dataset version
 #' currently being read.
 #'
-#' Every release has its own DOI, so these follow [im_version()]. Only version
-#' 1 is known offline, because that is the release this package was built
-#' against; any other version is looked up in the repository. If it cannot be
-#' reached, `doi` is `NA` rather than a DOI belonging to a different release -
-#' citing the wrong version is worse than admitting the value is unknown.
+#' Every release has its own DOI, so these follow [im_version()]. Only the
+#' release this package was built against is known offline; any other version
+#' is looked up in the repository. If it cannot be reached, `doi` is `NA`
+#' rather than a DOI belonging to a different release - citing the wrong
+#' version is worse than admitting the value is unknown.
 #'
 #' Use `concept = TRUE` for the concept DOI, which is version-independent and
 #' always resolves to the newest release. Cite the version you actually
@@ -89,18 +89,18 @@ im_doi <- function(version = im_version(), concept = FALSE) {
 #' @rdname im_doi
 #' @export
 im_dataset_info <- function(version = im_version()) {
-  version <- as.character(version)
+  version <- resolve_version(version)
   paper <- paste0("https://doi.org/", IM_PAPER$doi)
 
   base <- if (identical(version, IM_BUNDLED_VERSION)) {
-    IM_V1_INFO
+    IM_BUNDLED_INFO
   } else {
     d <- im_api_dataset(version)
     if (is.null(d)) {
       # Unknown rather than wrong.
-      list(title = IM_V1_INFO$title, doi = NA_character_, version = version,
+      list(title = IM_BUNDLED_INFO$title, doi = NA_character_, version = version,
            year = NA_character_, publisher = IM_PUBLISHER,
-           licence = IM_V1_INFO$licence)
+           licence = IM_BUNDLED_INFO$licence)
     } else {
       # Field by field through chr1(): the API has form for odd answers (it
       # returns 200 with a null body for versions that do not exist), and a
@@ -111,12 +111,12 @@ im_dataset_info <- function(version = im_version()) {
       title <- chr1(title)
       ver   <- chr1(d$versionNumber)
       list(
-        title     = if (is.na(title)) IM_V1_INFO$title else title,
+        title     = if (is.na(title)) IM_BUNDLED_INFO$title else title,
         doi       = chr1(d$doi),
         version   = if (is.na(ver)) version else ver,
         year      = substr(chr1(d$publishedDate), 1, 4),
         publisher = IM_PUBLISHER,
-        licence   = IM_V1_INFO$licence
+        licence   = IM_BUNDLED_INFO$licence
       )
     }
   }
@@ -151,6 +151,7 @@ im_dataset_info <- function(version = im_version()) {
 #' @examples
 #' im_cite()
 im_cite <- function(version = im_version()) {
+  version <- resolve_version(version)
   info <- im_dataset_info(version)
 
   wrap <- function(x) strwrap(x, width = 76, indent = 2, exdent = 4)
@@ -198,6 +199,7 @@ im_cite <- function(version = im_version()) {
 im_file_url <- function(file, type = c("data", "documentation"),
                         version = im_version()) {
   type <- match.arg(type)
+  version <- resolve_version(version)
   sprintf(
     "%s/%s/%s/%s?filePath=%s",
     IM_FILE_BASE, IM_DATASET_ID, version, type,
@@ -208,16 +210,34 @@ im_file_url <- function(file, type = c("data", "documentation"),
 #' The dataset version this session reads
 #'
 #' The deposit is updated annually and each update is a new version with its
-#' own DOI. `icpim` pins version 1 by default so that results stay
-#' reproducible; set `options(icpim.version = "2")` to move to a later one.
+#' own DOI. By default `icpim` reads the **newest published release**: the
+#' option `icpim.version` is `"latest"`, which is looked up in the repository
+#' the first time a version is needed and then fixed for the rest of the
+#' session, so one session never mixes releases. A new release therefore needs
+#' no change to this package or to your code.
+#'
+#' That is the right default for exploring the data and the wrong one for an
+#' analysis that must keep returning the same numbers: annual releases revise
+#' past values as well as adding new ones. Pin the release you analysed with
+#' `options(icpim.version = "2")`, and record it - [im_provenance()] carries
+#' it with the data, and [im_cite()] prints its DOI.
+#'
+#' If the repository cannot be reached when `"latest"` is resolved, the session
+#' reads the newest release already in the cache, or failing that the release
+#' this package was built against, and says so. [im_check_version()] reports
+#' when a newer release exists than the one being read.
 #'
 #' Changing the version changes the cache key, so files are re-downloaded
 #' rather than silently mixed across versions.
 #'
-#' @return A length-one character vector.
+#' @return A length-one character vector: a concrete version such as `"2"`,
+#'   never `"latest"`.
 #' @export
 #' @examples
+#' \donttest{
+#' # Resolving "latest" needs the repository the first time it is called.
 #' im_version()
+#' }
 im_version <- function() {
-  as.character(getOption("icpim.version", IM_DEFAULT_VERSION))
+  resolve_version(getOption("icpim.version", IM_DEFAULT_VERSION))
 }

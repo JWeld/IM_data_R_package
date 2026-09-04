@@ -6,17 +6,19 @@
 
 # Two version constants that are easy to confuse, so they sit together.
 #
-# IM_DEFAULT_VERSION is the release a session reads unless the user pins
-# another with options(icpim.version=). It is the only place the default is
-# written: .onLoad sets the option from it and im_version() falls back to it.
+# IM_DEFAULT_VERSION is what a session reads unless the user pins a release
+# with options(icpim.version=). It is "latest": the newest published release,
+# looked up in the repository once per session by resolve_version(). It is the
+# only place the default is written: .onLoad sets the option from it and
+# im_version() falls back to it.
 #
-# IM_BUNDLED_VERSION is the release the bundled code lists were built from.
-# The two are normally equal, and data-raw/make_data.R stamps the data so a
-# test catches them drifting - but they are distinct, because pinning a newer
-# release than the bundled lists is exactly the case warn_code_fallback()
-# reports.
-IM_DEFAULT_VERSION <- "1"
-IM_BUNDLED_VERSION <- "1"
+# IM_BUNDLED_VERSION is the release the bundled code lists were built from,
+# and the release read when "latest" cannot be resolved and nothing is cached.
+# data-raw/make_data.R stamps the data with it so a test catches the two
+# drifting apart. Reading a newer release than the bundled lists is exactly
+# the case warn_code_fallback() reports.
+IM_DEFAULT_VERSION <- "latest"
+IM_BUNDLED_VERSION <- "2"
 
 # One API call per version per session.
 im_api_dataset <- function(version = NULL) {
@@ -81,7 +83,74 @@ im_latest_version <- function() {
 #' @rdname im_latest_version
 #' @export
 im_version_exists <- function(version) {
-  !is.null(im_api_dataset(as.character(version)))
+  version <- resolve_version(version)
+  !is.null(im_api_dataset(version))
+}
+
+# Turn a version setting into a concrete version. "latest" is the one symbolic
+# value, and it is resolved once per session: a session reads one release
+# throughout, even if the network comes and goes, and im_version() - the
+# default of nearly every `version` argument - does not go to the repository on
+# every call. Anything else is taken as written; the repository decides
+# whether it exists.
+resolve_version <- function(version) {
+  version <- tryCatch(as.character(version), error = function(e) character())
+  version <- version[!is.na(version) & nzchar(version)]
+  if (!length(version)) version <- IM_DEFAULT_VERSION
+  version <- version[[1]]
+  if (!identical(tolower(version), "latest")) return(version)
+  if (!is.null(the$resolved_latest)) return(the$resolved_latest)
+
+  quiet  <- isTRUE(getOption("icpim.quiet", FALSE))
+  latest <- im_latest_version()
+  if (!is.na(latest)) {
+    if (!quiet) {
+      cli::cli_alert_info(c(
+        "Reading version {.val {latest}} of the dataset, the newest release. ",
+        "Pin it with {.code options(icpim.version = \"{latest}\")} so the ",
+        "analysis keeps returning the same numbers after the next release."
+      ))
+    }
+    the$resolved_latest <- latest
+    return(latest)
+  }
+
+  # Offline. The newest release already in the cache is the best available
+  # answer - it is what this machine last read - and failing that, the release
+  # this package was built against. Either way, say which and why: silently
+  # reading an older release than "latest" promises is the failure to avoid.
+  cached   <- newest_cached_version()
+  fallback <- if (is.na(cached)) IM_BUNDLED_VERSION else cached
+  if (!quiet) {
+    cli::cli_alert_warning(c(
+      "Could not reach the repository to find the newest release; reading ",
+      "version {.val {fallback}} ",
+      if (is.na(cached)) "(the release this package was built against) "
+      else "(the newest release in the cache) ",
+      "for the rest of this session."
+    ))
+  }
+  the$resolved_latest <- fallback
+  fallback
+}
+
+# Is the session set to follow the newest release rather than a pinned one?
+following_latest <- function() {
+  v <- getOption("icpim.version", IM_DEFAULT_VERSION)
+  identical(tolower(as.character(v %||% IM_DEFAULT_VERSION)[1]), "latest")
+}
+
+# The newest release with anything in the cache, or NA.
+newest_cached_version <- function() {
+  root <- cache_root()
+  if (!dir.exists(root)) return(NA_character_)
+  dirs <- list.files(root, pattern = "^v[0-9]+(\\.[0-9]+)*$")
+  dirs <- dirs[vapply(dirs, function(d) {
+    length(list.files(file.path(root, d))) > 0L
+  }, logical(1))]
+  if (!length(dirs)) return(NA_character_)
+  v <- sub("^v", "", dirs)
+  v[order(numeric_version(v), decreasing = TRUE)][[1]]
 }
 
 # Is version string `a` newer than `b`? as.numeric() turns "2.0.1" into NA,
@@ -98,12 +167,20 @@ version_newer <- function(a, b) {
 
 #' Check whether a newer dataset version has been published
 #'
-#' The deposit is updated annually. This package pins a version so that
-#' analyses stay reproducible, which means it will not move to a new release
-#' on its own - but it can tell you that one exists.
+#' The deposit is updated annually. By default a session reads the newest
+#' release, so this normally confirms that what you are reading is the latest.
+#' It matters once you have pinned a version with `options(icpim.version=)`,
+#' which is the right thing to do for an analysis that must keep returning the
+#' same numbers: a pinned session never moves on its own, but this tells you
+#' that a newer release exists.
+#'
+#' It also catches a session that started offline. `"latest"` is resolved once
+#' per session, so a session that could not reach the repository when it
+#' started keeps reading the fallback release even after the network returns;
+#' this says so.
 #'
 #' Nothing here changes what you are reading. To move, set
-#' `options(icpim.version = "2")` deliberately, rerun your analysis, and
+#' `options(icpim.version = "3")` deliberately, rerun your analysis, and
 #' compare.
 #'
 #' @param quiet Logical. Return the result without printing anything.
@@ -124,6 +201,15 @@ im_check_version <- function(quiet = FALSE) {
   if (!quiet) {
     if (is.na(latest)) {
       cli::cli_alert_warning("Could not reach the repository to check for updates.")
+    } else if (newer && following_latest()) {
+      cli::cli_alert_info(c(
+        "Version {.val {latest}} is available, but this session settled on ",
+        "{.val {current}} because the repository could not be reached when ",
+        "it started."
+      ))
+      cli::cli_alert_info(
+        "Restart R to read {.val {latest}}, or set {.code options(icpim.version = \"{latest}\")}."
+      )
     } else if (newer) {
       cli::cli_alert_info(c(
         "Version {.val {latest}} is available; you are reading {.val {current}}."
@@ -160,7 +246,8 @@ im_check_version <- function(quiet = FALSE) {
 im_manifest <- function(version = im_version(),
                         type = c("data", "documentation", "all")) {
   type <- match.arg(type)
-  d <- im_api_dataset(as.character(version))
+  version <- resolve_version(version)
+  d <- im_api_dataset(version)
 
   # A record can arrive without its file list, not only not at all - or with
   # a list that has no names or no types, which leaves every typed view of it

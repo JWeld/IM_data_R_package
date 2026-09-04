@@ -19,13 +19,21 @@
 #' # Where files would be stored (does not create anything):
 #' im_cache_dir(create = FALSE)
 im_cache_dir <- function(version = im_version(), create = FALSE) {
-  root <- getOption("icpim.cache_dir", Sys.getenv("ICPIM_CACHE_DIR", ""))
-  if (!nzchar(root)) root <- tools::R_user_dir("icpim", which = "cache")
-  path <- file.path(root, paste0("v", version))
+  version <- resolve_version(version)
+  path <- file.path(cache_root(), paste0("v", version))
   if (isTRUE(create) && !dir.exists(path)) {
     dir.create(path, recursive = TRUE, showWarnings = FALSE)
   }
   path
+}
+
+# The directory the per-version caches live under. Separate from
+# im_cache_dir() because resolving "latest" offline needs to look here before
+# any version is known.
+cache_root <- function() {
+  root <- getOption("icpim.cache_dir", Sys.getenv("ICPIM_CACHE_DIR", ""))
+  if (!nzchar(root)) root <- tools::R_user_dir("icpim", which = "cache")
+  root
 }
 
 #' List and clear cached files
@@ -43,6 +51,7 @@ im_cache_dir <- function(version = im_version(), create = FALSE) {
 #' @examples
 #' im_cache_list()
 im_cache_list <- function(version = im_version()) {
+  version <- resolve_version(version)
   dir <- im_cache_dir(version, create = FALSE)
   files <- if (dir.exists(dir)) {
     list.files(dir, full.names = TRUE)
@@ -62,6 +71,7 @@ im_cache_list <- function(version = im_version()) {
 #'   ask before deleting. Set `FALSE` to clear without prompting.
 #' @export
 im_cache_clear <- function(version = im_version(), confirm = interactive()) {
+  version <- resolve_version(version)
   dir <- im_cache_dir(version, create = FALSE)
   if (!dir.exists(dir)) {
     cli::cli_alert_info("Nothing cached for version {version}.")

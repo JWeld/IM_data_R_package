@@ -13,13 +13,21 @@ im_check_version(quiet = FALSE)
 Invisibly, a list with \code{current}, \code{latest} and \code{newer_available}.
 }
 \description{
-The deposit is updated annually. This package pins a version so that
-analyses stay reproducible, which means it will not move to a new release
-on its own - but it can tell you that one exists.
+The deposit is updated annually. By default a session reads the newest
+release, so this normally confirms that what you are reading is the latest.
+It matters once you have pinned a version with \code{options(icpim.version=)},
+which is the right thing to do for an analysis that must keep returning the
+same numbers: a pinned session never moves on its own, but this tells you
+that a newer release exists.
 }
 \details{
+It also catches a session that started offline. \code{"latest"} is resolved once
+per session, so a session that could not reach the repository when it
+started keeps reading the fallback release even after the network returns;
+this says so.
+
 Nothing here changes what you are reading. To move, set
-\code{options(icpim.version = "2")} deliberately, rerun your analysis, and
+\code{options(icpim.version = "3")} deliberately, rerun your analysis, and
 compare.
 }
 \examples{

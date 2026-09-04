@@ -1,15 +1,7 @@
 # A filter that matches nothing used to return an empty table in silence,
 # which is indistinguishable from "the data genuinely has none".
 
-local_planted_pc <- function(env = parent.frame()) {
-  dir <- withr::local_tempdir(.local_envir = env)
-  withr::local_options(icpim.cache_dir = dir, icpim.version = "1",
-                       .local_envir = env)
-  file.copy(im_example("sample_PC.csv"),
-            file.path(im_cache_dir(create = TRUE),
-                      "PC_precipitation_chemistry.csv"))
-  invisible(dir)
-}
+# local_planted_pc() is in helper-fixtures.R.
 
 test_that("countries accepts the ISO code and the full name alike", {
   local_planted_pc()

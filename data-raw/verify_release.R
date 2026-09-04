@@ -1,6 +1,6 @@
 # Integration check against the live repository.
 #
-#   Rscript data-raw/verify_release.R          # check the pinned version
+#   Rscript data-raw/verify_release.R          # check the newest release
 #   ICPIM_VERSION=2 Rscript data-raw/verify_release.R
 #
 # Nothing here is compared against numbers recorded in the package, because

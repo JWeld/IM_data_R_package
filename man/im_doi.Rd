@@ -24,11 +24,11 @@ Returns the DOI, identifier and descriptive metadata for the dataset version
 currently being read.
 }
 \details{
-Every release has its own DOI, so these follow \code{\link[=im_version]{im_version()}}. Only version
-1 is known offline, because that is the release this package was built
-against; any other version is looked up in the repository. If it cannot be
-reached, \code{doi} is \code{NA} rather than a DOI belonging to a different release -
-citing the wrong version is worse than admitting the value is unknown.
+Every release has its own DOI, so these follow \code{\link[=im_version]{im_version()}}. Only the
+release this package was built against is known offline; any other version
+is looked up in the repository. If it cannot be reached, \code{doi} is \code{NA}
+rather than a DOI belonging to a different release - citing the wrong
+version is worse than admitting the value is unknown.
 
 Use \code{concept = TRUE} for the concept DOI, which is version-independent and
 always resolves to the newest release. Cite the version you actually

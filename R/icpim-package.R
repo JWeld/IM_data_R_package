@@ -13,8 +13,10 @@ the <- new.env(parent = emptyenv())
 # guards without emptying the environment: a missing flag is not FALSE, and
 # `!NULL` is length zero, which errors rather than warning.
 reset_session_state <- function() {
-  the$warned_sodium  <- FALSE
-  the$warned_flagsta <- FALSE
+  the$warned_sodium   <- FALSE
+  the$warned_flagsta  <- FALSE
+  # "latest" is resolved once per session; a reset lets it be resolved again.
+  the$resolved_latest <- NULL
   invisible()
 }
 reset_session_state()

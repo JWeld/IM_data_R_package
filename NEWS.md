@@ -81,6 +81,24 @@ First release.
 The deposit is republished each year. Nothing version-specific is recorded in
 this package, so an ordinary release needs no code change:
 
+* **The default version is `"latest"`.** A session reads the newest published
+  release, looked up in the repository the first time a version is needed and
+  fixed for the rest of the session, so one session never mixes releases and
+  a running analysis is not moved by a release appearing mid-way. Version 3,
+  4 and so on will be read by default when they are published. Pin a release
+  with `options(icpim.version = "2")` for an analysis that must keep
+  returning the same numbers; `im_provenance()` records which release an
+  object came from.
+* If the repository cannot be reached when `"latest"` is resolved, the
+  session reads the newest release already in the cache, or failing that the
+  release the package was built against, and says which and why rather than
+  reading an older release in silence. `im_check_version()` tells such a
+  session when a newer release has become reachable.
+* The bundled code lists were rebuilt from version 2, which is also the
+  release cited offline. Version 2 corrected the sodium code, so
+  `repair = "auto"` does nothing to it; the version 1 extracts in
+  `inst/extdata` are kept as they were published, since they are what the
+  repair is tested against.
 * `im_manifest()` reads the file list and sizes from the repository, so a
   renamed file or an added subprogramme is picked up automatically.
 * `im_coverage()` measures row counts, site counts, year ranges and
@@ -99,8 +117,8 @@ this package, so an ordinary release needs no code change:
   the same mistake: editing the constant without rerunning
   `data-raw/make_data.R`, which would leave the older lists in place labelled
   as the newer ones.
-* `im_doi()`, `im_dataset_info()` and `im_cite()` follow the pinned version,
-  since each release has its own DOI. Where a version's DOI cannot be
+* `im_doi()`, `im_dataset_info()` and `im_cite()` follow the version being
+  read, since each release has its own DOI. Where a version's DOI cannot be
   established they report `NA` and say so, rather than returning the DOI of a
   different release: citing the wrong version is worse than admitting the
   value is unknown.
@@ -119,10 +137,10 @@ this package, so an ordinary release needs no code change:
   is a runtime option, so one package version reads any release, and two
   people running the same package version can be on different data. It
   survives subsetting, the common dplyr verbs, `im_widen()` and `saveRDS()`.
-* `im_check_version()` reports whether a newer release exists.
-  `im_latest_version()` and `im_version_exists()` sit underneath it. The
-  pinned version never moves on its own, because moving it changes the numbers
-  an analysis returns.
+* `im_check_version()` reports whether a newer release exists than the one
+  being read. `im_latest_version()` and `im_version_exists()` sit underneath
+  it. A pinned version never moves on its own, because moving it changes the
+  numbers an analysis returns.
 * A monthly `dataset-watch` GitHub Action checks for a new release, runs
   `data-raw/verify_release.R` against it, and opens an issue if either the
   release is new or verification fails.
@@ -134,6 +152,11 @@ with the published files as they stand - every one of the 21 carries `AREA`,
 `YYYYMM`, `VALUE` and `UNIT` - so these guard against a release whose column
 set differs, or a session whose state does.
 
+* A download that fails because the repository is down, with the network
+  otherwise up, says so. It used to be reported as the version not being
+  published, because the existence check cannot tell an absent release from
+  an unreachable repository, and that sent the reader re-pinning a release
+  that exists.
 * `im_detection_limit()` errors naming the missing column when a table has no
   `VALUE`, matching `im_units()`. It used to return the table unchanged behind
   a bare tibble warning, which reads as "nothing was below detection".

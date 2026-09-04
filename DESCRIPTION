@@ -8,12 +8,13 @@ Authors@R: c(
            comment = "Collects and curates the monitoring data this package reads"))
 Description: Download, cache and tidy the open dataset of the International
     Cooperative Programme on Integrated Monitoring of Air Pollution Effects on
-    Ecosystems (ICP IM), published at <doi:10.5878/z376-2m63> and described in
+    Ecosystems (ICP IM), published at <doi:10.5878/x6fn-gw26> and described in
     Weldon et al. (2026) <doi:10.1038/s41597-026-07181-8>. It holds long-term
     integrated ecosystem monitoring from forested catchments in 14 European
     countries, covering atmospheric chemistry, deposition, soil, soil water,
-    groundwater, runoff, vegetation and biota. Functions resolve and cache the published
-    files, read them with the correct column types, and decode the substance,
+    groundwater, runoff, vegetation and biota. Functions read the newest
+    published release by default, or a pinned one, cache the published files,
+    read them with the correct column types, and decode the substance,
     parameter, determination and pretreatment code lists into readable names.
     Several encoding traps in the published files are handled explicitly, most
     importantly the substance code for sodium, which is the literal string
@@ -21,7 +22,7 @@ Description: Download, cache and tidy the open dataset of the International
 License: MIT + file LICENSE
 Copyright: The code lists in data/ and the data extracts in inst/extdata are
     derived from the ICP Integrated Monitoring open dataset
-    <doi:10.5878/z376-2m63>, copyright the ICP Integrated Monitoring
+    <doi:10.5878/x6fn-gw26>, copyright the ICP Integrated Monitoring
     Programme Centre and licensed CC BY 4.0
     <https://creativecommons.org/licenses/by/4.0/>. All other components are
     copyright James Weldon under the MIT licence in LICENSE.
@@ -53,4 +54,4 @@ URL: https://github.com/JWeld/IM_data_R_package
 BugReports: https://github.com/JWeld/IM_data_R_package/issues
 LazyData: true
 LazyDataCompression: xz
-Config/roxygen2/version: 8.0.0
+Config/roxygen2/version: 8.1.0

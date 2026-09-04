@@ -17,28 +17,8 @@ test_that("the sodium substance code survives reading", {
   expect_false(anyNA(pc$SUBST))
 })
 
-# A version-2-style file: sodium already carries its code. Built from the real
-# extract so it differs from it in exactly the one respect under test.
-v2_file <- function() {
-  src <- readLines(im_example("sample_PC.csv"), encoding = "UTF-8")
-  hdr <- strsplit(src[1], ",", fixed = TRUE)[[1]]
-  i <- which(hdr == "SUBST")
-  body <- vapply(src[-1], function(ln) {
-    f <- strsplit(ln, ",", fixed = TRUE)[[1]]
-    # strsplit drops trailing empty fields; restore the full width or the
-    # rewritten line is narrower than the header.
-    length(f) <- length(hdr)
-    f[is.na(f)] <- ""
-    if (!nzchar(f[i])) f[i] <- "NA"
-    paste(f, collapse = ",")
-  }, character(1), USE.NAMES = FALSE)
-  path <- withr::local_tempfile(fileext = ".csv", .local_envir = parent.frame())
-  writeLines(c(src[1], body), path, useBytes = TRUE)
-  path
-}
-
 test_that("a correctly coded file passes through untouched", {
-  path <- v2_file()
+  path <- corrected_pc_file()
   # Reading it needs no repair at all.
   none <- im_read_file(path, repair = FALSE)
   expect_equal(sum(none$SUBST == "NA", na.rm = TRUE), 60)
@@ -53,7 +33,7 @@ test_that("a correctly coded file passes through untouched", {
 
 test_that("a corrected file gives the same result as a repaired v1 file", {
   v1 <- im_read_file(im_example("sample_PC.csv"), repair = TRUE)
-  v2 <- im_read_file(v2_file(), repair = FALSE)
+  v2 <- im_read_file(corrected_pc_file(), repair = FALSE)
   expect_equal(v1$SUBST, v2$SUBST)
   expect_equal(v1$VALUE, v2$VALUE)
 })
@@ -68,15 +48,19 @@ test_that("repair = 'auto' follows the dataset version", {
 })
 
 test_that("blank codes in an unaffected version are reported, not assumed", {
-  withr::local_options(icpim.cache_dir = withr::local_tempdir(), icpim.version = "2")
-  dir.create(file.path(im_cache_dir(), ""), recursive = TRUE, showWarnings = FALSE)
-  # Plant a v1-style file (blank sodium) where version 2 would be looked for.
+  # A release this package has not seen: not the bundled one, so its code
+  # lists would be fetched, and not version 1, so no repair applies.
+  withr::local_options(icpim.cache_dir = withr::local_tempdir(), icpim.version = "3")
+  local_mocked_bindings(im_api_dataset = function(version = NULL) NULL)
+  # Plant a v1-style file (blank sodium) where version 3 would be looked for.
   file.copy(im_example("sample_PC.csv"),
             file.path(im_cache_dir(create = TRUE),
                       "PC_precipitation_chemistry.csv"))
   # Two distinct things are wrong here and both should be said out loud: the
-  # blank codes, and that version 2's code lists are not available so version
-  # 1's are being used.
+  # blank codes, and that version 3's code lists are not available so the
+  # bundled ones are being used. The fetch is mocked to fail rather than left
+  # to the network, so the test means the same online and offline.
+  local_mocked_bindings(im_update_codes = function(...) invisible(NULL))
   warns <- capture_warnings(out <- im_read("PC", quiet = TRUE))
   expect_match(warns, "blank substance code", all = FALSE)
   expect_match(warns, "code lists published for", all = FALSE)

@@ -27,12 +27,16 @@ test_that("the version default comes from the constant, not a literal", {
   # It used to be written in three places, one of which - im_version()'s
   # fallback - was unreachable because .onLoad always sets the option, so a
   # maintainer could edit it and see no effect. Test the reachable behaviour:
-  # with the option cleared, the fallback must be the constant.
-  withr::with_options(list(icpim.version = NULL), {
-    expect_equal(im_version(), IM_DEFAULT_VERSION)
+  # with the option cleared, the fallback must be the constant, which is
+  # "latest" and resolves through the repository.
+  expect_equal(IM_DEFAULT_VERSION, "latest")
+  withr::defer(reset_session_state())
+  reset_session_state()
+  local_mocked_bindings(im_latest_version = function() "7")
+  withr::with_options(list(icpim.version = NULL, icpim.quiet = TRUE), {
+    expect_equal(im_version(), "7")
   })
-  expect_equal(im_version(), IM_DEFAULT_VERSION)
-  # And the two version constants agree with the stamp on the bundled data.
+  # The bundled version constant agrees with the stamp on the bundled data.
   expect_equal(IM_BUNDLED_VERSION, attr(im_subprogrammes, "dataset_version"))
 })
 

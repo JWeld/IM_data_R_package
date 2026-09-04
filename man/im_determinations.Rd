@@ -8,7 +8,7 @@
 A tibble with 3 columns: \code{code}, \code{name} and \code{note}.
 }
 \source{
-\doi{10.5878/z376-2m63}
+\doi{10.5878/x6fn-gw26}
 }
 \usage{
 im_determinations

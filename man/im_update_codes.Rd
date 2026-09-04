@@ -16,7 +16,7 @@ Invisibly, the path of the cached code lists, or \code{NULL} if they
 could not be fetched.
 }
 \description{
-The lookups bundled with this package come from version 1. A later release
+The lookups bundled with this package come from one release. A later release
 can add substances, parameters, methods or sites, so for any other version
 the published lists are downloaded and cached, then used in preference to
 the bundled ones.
