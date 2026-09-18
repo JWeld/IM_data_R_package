@@ -97,7 +97,8 @@ fetch_file <- function(url, dest, quiet = TRUE, version = im_version()) {
       curl::curl_download(
         url, tmp,
         quiet = quiet || !interactive(),
-        mode = "wb"
+        mode = "wb",
+        handle = im_handle()
       )
       TRUE
     },
@@ -126,7 +127,9 @@ fetch_file <- function(url, dest, quiet = TRUE, version = im_version()) {
       cli::cli_abort(
         c(
           "Could not download {.url {url}}.",
-          "x" = conditionMessage(e),
+          # Interpolated, not pasted in: cli reads a bare string as a template,
+          # and an error text containing braces would be evaluated as R.
+          "x" = "{conditionMessage(e)}",
           cause,
           "i" = paste(
             "The files can also be downloaded by hand from",
@@ -153,17 +156,28 @@ fetch_file <- function(url, dest, quiet = TRUE, version = im_version()) {
         call = NULL
       )
     }
-    first <- readLines(tmp, n = 1L, warn = FALSE, encoding = "UTF-8")
-    if (length(first) && grepl("^\\s*<", first)) {
+    if (is_web_page(tmp)) {
       cli::cli_abort(
         c("The server returned a web page rather than a CSV file.",
           "i" = "Version {.val {version}} may not exist."),
         call = NULL
       )
     }
-    file.rename(tmp, dest)
+    if (!file.rename(tmp, dest)) {
+      cli::cli_abort(
+        c("Downloaded {.url {url}} but could not move it into the cache.",
+          "i" = "Check that {.path {dirname(dest)}} is writable."),
+        call = NULL
+      )
+    }
   }
   invisible(dest)
+}
+
+# Does a downloaded file start like HTML rather than CSV?
+is_web_page <- function(path) {
+  first <- readLines(path, n = 1L, warn = FALSE, encoding = "UTF-8")
+  length(first) > 0L && grepl("^\\s*<", first)
 }
 
 # Path to a cached file, downloading it first if needed.

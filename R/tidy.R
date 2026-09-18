@@ -39,7 +39,7 @@ im_widen <- function(x,
     candidates <- c(
       "COUNTRY", "SUBPROG", "AREA", "INST", "SCODE", "MEDIUM", "LEVEL",
       "YYYYMM", "DAY", "date", "year", "month", "SPOOL", "FLAGSTA", "stat",
-      "TREE_OR_QUARTER", "CLASS", "NAME_GBIF", "MEDIUM_NAME_GBIF"
+      "TREE_OR_QUARTER", "CLASS", "NEEDLES", "NAME_GBIF", "MEDIUM_NAME_GBIF"
     )
     id_cols <- intersect(candidates, names(x))
   }
@@ -129,6 +129,8 @@ im_units <- function(x) {
     dplyr::ungroup()
 }
 
+DL_HALVED_ATTR <- "icpim_dl_halved"
+
 #' Drop or mark values below the detection limit
 #'
 #' Values below detection are published as the detection limit itself with
@@ -141,6 +143,13 @@ im_units <- function(x) {
 #'   `"drop"` removes the rows, `"na"` sets `VALUE` to `NA`, and `"keep"`
 #'   leaves them but is useful together with `estimated`.
 #' @param estimated Logical. Also drop values flagged as estimated (`"E"`)?
+#'
+#' @details
+#' `"half"` leaves `FLAGQUA` as published, so the rows still read as below
+#' detection afterwards. The table therefore remembers that it has been halved,
+#' and a second `"half"` warns and leaves the values alone rather than
+#' quartering them. The memory is an attribute, and like [im_provenance()] it
+#' is lost to [dplyr::summarise()] and to joins.
 #'
 #' @return A tibble.
 #' @export
@@ -163,9 +172,19 @@ im_detection_limit <- function(x, action = c("half", "drop", "na", "keep"),
     ))
   }
   below <- !is.na(x$FLAGQUA) & x$FLAGQUA == "L"
+  # The flag outlives the halving, so nothing in the data says it has been
+  # done; without this a second call quarters the detection limit.
+  if (action == "half" && isTRUE(attr(x, DL_HALVED_ATTR, exact = TRUE))) {
+    cli::cli_warn(c(
+      "Below-detection values in this table have already been halved.",
+      "i" = "They were left as they are rather than halved again."
+    ))
+    action <- "keep"
+  }
   x <- switch(action,
     half = {
       x$VALUE[below] <- x$VALUE[below] / 2
+      attr(x, DL_HALVED_ATTR) <- TRUE
       x
     },
     drop = x[!below, , drop = FALSE],

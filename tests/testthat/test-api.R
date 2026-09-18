@@ -66,6 +66,10 @@ test_that("offline, 'latest' falls back to the newest cached release", {
     file.create(file.path(root, v, "PC_precipitation_chemistry.csv"))
   }
   dir.create(file.path(root, "v11"))          # empty: nothing to read there
+  dir.create(file.path(root, "v13"))          # code lists only: no data either
+  file.create(file.path(root, "v13", "_code_lists.rds"))
+  dir.create(file.path(root, "v14"))          # an interrupted download
+  file.create(file.path(root, "v14", "PC_precipitation_chemistry.csv.part-123"))
   dir.create(file.path(root, "v12.part"))     # not a version directory
   expect_equal(newest_cached_version(), "10") # numeric, not lexical
   withr::local_options(icpim.quiet = FALSE)

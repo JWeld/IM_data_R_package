@@ -33,25 +33,60 @@ im_api_dataset <- function(version = NULL) {
 
   # A version that is absent stays absent, so remember it and stop asking. A
   # network failure is transient - a user who reconnects mid-session must not
-  # be stuck with a cached failure - so that is never remembered.
+  # be stuck with a cached failure - so that is never remembered for long:
+  # only for IM_API_RETRY_AFTER seconds, because one im_read() asks several
+  # times over and on a network that swallows packets each ask would otherwise
+  # wait out the full timeout.
   if (identical(the[[paste0(key, "_absent")]], TRUE)) return(NULL)
+  failed_at <- the[[paste0(key, "_failed_at")]]
+  if (!is.null(failed_at) &&
+      difftime(Sys.time(), failed_at, units = "secs") < IM_API_RETRY_AFTER) {
+    return(NULL)
+  }
+  failed <- function() {
+    the[[paste0(key, "_failed_at")]] <- Sys.time()
+    NULL
+  }
 
-  raw <- tryCatch(curl::curl_fetch_memory(url), error = function(e) NULL)
-  if (is.null(raw) || raw$status_code != 200L) return(NULL)
+  raw <- tryCatch(curl::curl_fetch_memory(url, handle = im_handle(timeout = 30)),
+                  error = function(e) NULL)
+  if (is.null(raw) || raw$status_code != 200L) return(failed())
 
+  # A 200 that is not JSON is somebody else's page - a captive portal, a proxy
+  # error - and says nothing about the dataset, so it counts as a network
+  # failure, not as an answer.
   js <- tryCatch(
     jsonlite::fromJSON(rawToChar(raw$content), simplifyVector = TRUE),
     error = function(e) NULL
   )
-  # The API answers 200 with a null body for a version that does not exist,
-  # so the status code alone does not tell you whether it is there.
-  if (is.null(js) || is.null(js$dataset) || !length(js$dataset)) {
+  if (!is.list(js) || !"dataset" %in% names(js)) return(failed())
+
+  # The API answers 200 with a null dataset for a version that does not exist,
+  # so the status code alone does not tell you whether it is there. Only this
+  # answer - the repository's own, parsed - is remembered as absence.
+  if (is.null(js$dataset) || !length(js$dataset)) {
     the[[paste0(key, "_absent")]] <- TRUE
     return(NULL)
   }
 
+  the[[paste0(key, "_failed_at")]] <- NULL
   the[[key]] <- js$dataset
   js$dataset
+}
+
+# Seconds before a failed lookup is tried again.
+IM_API_RETRY_AFTER <- 30
+
+# libcurl's own connection timeout is five minutes, which a session that is
+# merely offline-ish would sit through in silence. `timeout` caps the whole
+# transfer, so it is for the small API answers only; a file download gets the
+# connection limit and a stall detector instead, since a slow link fetching
+# 20 MB is not a failure.
+im_handle <- function(timeout = NULL) {
+  h <- curl::new_handle(connecttimeout = 10, low_speed_limit = 1,
+                        low_speed_time = 60)
+  if (!is.null(timeout)) curl::handle_setopt(h, timeout = timeout)
+  h
 }
 
 #' Which dataset versions exist
@@ -140,13 +175,16 @@ following_latest <- function() {
   identical(tolower(as.character(v %||% IM_DEFAULT_VERSION)[1]), "latest")
 }
 
-# The newest release with anything in the cache, or NA.
+# The newest release with data in the cache, or NA. Data means a published
+# CSV: a directory holding only the fetched code lists, or the remains of an
+# interrupted download, has nothing in it to read, and settling on it offline
+# would fail at the first im_read().
 newest_cached_version <- function() {
   root <- cache_root()
   if (!dir.exists(root)) return(NA_character_)
   dirs <- list.files(root, pattern = "^v[0-9]+(\\.[0-9]+)*$")
   dirs <- dirs[vapply(dirs, function(d) {
-    length(list.files(file.path(root, d))) > 0L
+    length(list.files(file.path(root, d), pattern = "\\.csv$")) > 0L
   }, logical(1))]
   if (!length(dirs)) return(NA_character_)
   v <- sub("^v", "", dirs)

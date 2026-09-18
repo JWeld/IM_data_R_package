@@ -31,7 +31,7 @@ as it appears in \code{COUNTRY} (\code{"Sweden"}). Case-insensitive.}
 
 \item{substances}{Optional character vector of substance or parameter codes
 to keep, matched against \code{SUBST} or \code{PARAM} as appropriate, e.g.
-\code{c("SO4S", "NO3N")}. Use \code{"NA"} for sodium.}
+\code{c("SO4S", "NO3N")}. Case-insensitive. Use \code{"NA"} for sodium.}
 
 \item{decode}{Logical. Join the code lists to add readable name columns?}
 
@@ -64,7 +64,10 @@ IM open dataset. This is the main entry point of the package.
 \section{What this does beyond reading the CSV}{
 \itemize{
 \item \strong{Types every column explicitly.} \code{SCODE} keeps its leading zeros;
-\code{VALUE} is numeric; nothing is guessed.
+\code{VALUE} is numeric; \code{NEEDLES} keeps its age-class letters; nothing is
+guessed. A published value that is not a number in a numeric column
+becomes \code{NA} with a warning of class \code{icpim_numeric_loss}, never
+silently.
 \item \strong{Corrects the sodium code on read.} A known issue affecting \strong{version 1
 only}: the substance code for sodium is blank in 48,444 rows across
 thirteen subprogrammes, the literal string \code{"NA"} having been consumed as a

@@ -13,8 +13,12 @@
 # and leaves this file as the single place where "empty means missing" is
 # decided.
 
+# NEEDLES is not here, whatever its name suggests: it is the needle age class
+# in foliage chemistry, published as letters (C, P, E). Typed as numeric the
+# whole column became NA, and current-year needles could no longer be told
+# from the previous year's.
 IM_NUMERIC_COLS <- c(
-  "VALUE", "LEVEL", "SPOOL", "SIZE", "NEEDLES", "DAY",
+  "VALUE", "LEVEL", "SPOOL", "SIZE", "DAY",
   "TAXONKEY_GBIF", "MEDIUM_TAXONKEY_GBIF"
 )
 
@@ -26,7 +30,10 @@ IM_NUMERIC_COLS <- c(
 #' # What this does beyond reading the CSV
 #'
 #' * **Types every column explicitly.** `SCODE` keeps its leading zeros;
-#'   `VALUE` is numeric; nothing is guessed.
+#'   `VALUE` is numeric; `NEEDLES` keeps its age-class letters; nothing is
+#'   guessed. A published value that is not a number in a numeric column
+#'   becomes `NA` with a warning of class `icpim_numeric_loss`, never
+#'   silently.
 #' * **Corrects the sodium code on read.** A known issue affecting **version 1
 #'   only**: the substance code for sodium is blank in 48,444 rows across
 #'   thirteen subprogrammes, the literal string `"NA"` having been consumed as a
@@ -67,7 +74,7 @@ IM_NUMERIC_COLS <- c(
 #' @param years Optional numeric vector of years to keep, e.g. `2000:2019`.
 #' @param substances Optional character vector of substance or parameter codes
 #'   to keep, matched against `SUBST` or `PARAM` as appropriate, e.g.
-#'   `c("SO4S", "NO3N")`. Use `"NA"` for sodium.
+#'   `c("SO4S", "NO3N")`. Case-insensitive. Use `"NA"` for sodium.
 #' @param decode Logical. Join the code lists to add readable name columns?
 #' @param repair Correct the blank sodium substance code. `"auto"`, the
 #'   default, applies the correction to version 1 and leaves every later
@@ -180,7 +187,9 @@ im_read <- function(subprog,
   if (!is.null(substances)) {
     key <- im_key_col(out)
     require_col(out, key, "substances")
-    keep <- !is.na(out[[key]]) & out[[key]] %in% substances
+    # Case-insensitive like the other filters. Safe because no two published
+    # codes differ only in case, in either list.
+    keep <- !is.na(out[[key]]) & toupper(out[[key]]) %in% toupper(substances)
     out <- filter_rows(out, keep, "substances", substances, out[[key]])
   }
 
@@ -194,8 +203,8 @@ im_read <- function(subprog,
       has_mixed_stats(out)) {
     the$warned_flagsta <- TRUE
     cli::cli_alert_info(c(
-      "{.field {code}} mixes statistics: the same site, level and month can ",
-      "carry a mean, a minimum and a maximum as separate rows. ",
+      "{.field {code}} mixes statistics: the same site, level and month ",
+      "carries more than one of them (a mean, a minimum, a maximum) as separate rows. ",
       "Select on the {.field stat} column before aggregating."
     ))
   }
@@ -291,8 +300,25 @@ im_read_file <- function(path, repair = TRUE, quiet = TRUE) {
     x
   })
 
+  # Coercion is counted, never just suppressed: a published value that is not
+  # a number becomes NA here, and a column this package wrongly believes to be
+  # numeric would otherwise vanish without a word. Not governed by `quiet`,
+  # for the same reason the empty-filter warning is not.
   for (nm in intersect(IM_NUMERIC_COLS, names(raw))) {
-    raw[[nm]] <- suppressWarnings(as.numeric(raw[[nm]]))
+    num  <- suppressWarnings(as.numeric(raw[[nm]]))
+    lost <- !is.na(raw[[nm]]) & is.na(num)
+    if (any(lost)) {
+      n_lost   <- sum(lost)
+      examples <- utils::head(unique(raw[[nm]][lost]), 5)
+      cli::cli_warn(c(
+        "{n_lost} value{?s} in {.field {nm}} of {.file {basename(path)}}
+         {?is/are} not {?a number/numbers} and became {.code NA}.",
+        "i" = "For example {.val {examples}}.",
+        "i" = "Please report this: the column may not be numeric in this
+               release."
+      ), class = "icpim_numeric_loss")
+    }
+    raw[[nm]] <- num
   }
 
   out <- im_add_dates(raw)
@@ -378,7 +404,22 @@ filter_rows <- function(x, keep, arg, wanted, available) {
   x[keep, , drop = FALSE]
 }
 
+# Does any one sample carry more than one statistic? More than one FLAGSTA in
+# the table is not the test: in the deposition subprogrammes S, W and X sit on
+# different substances and never share a key, and a nudge spent there is not
+# shown again for AM, where it matters. So ask whether rows alike in everything
+# but the statistic, its value and what is derived from them exist: there are
+# then more distinct (key, FLAGSTA) pairs than distinct keys.
 has_mixed_stats <- function(x) {
   if (!"FLAGSTA" %in% names(x) || !nrow(x)) return(FALSE)
-  length(unique(x$FLAGSTA[!is.na(x$FLAGSTA)])) > 1L
+  # An unflagged row states no statistic, so it cannot mix with one.
+  x <- x[!is.na(x$FLAGSTA), , drop = FALSE]
+  if (length(unique(x$FLAGSTA)) < 2L) return(FALSE)
+  key <- setdiff(names(x), c("VALUE", "UNIT", "FLAGSTA", "FLAGQUA",
+                             "stat", "quality"))
+  if (!length(key)) return(FALSE)
+  # dplyr::distinct() rather than duplicated(): some sixty times faster on the
+  # larger subprogrammes, and this runs on every read until the nudge fires.
+  nrow(dplyr::distinct(x[, c(key, "FLAGSTA"), drop = FALSE])) >
+    nrow(dplyr::distinct(x[, key, drop = FALSE]))
 }

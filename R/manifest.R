@@ -170,6 +170,9 @@ im_cite <- function(version = im_version()) {
       "https://doi.org/", IM_DOI_CONCEPT, ", which resolves to the newest release."
     ))
   } else {
+    # The paper's author string is also the deposit's: the record lists 51
+    # creators with the same first author (checked against the repository,
+    # 2026-09-18), so "et al." is right for both.
     wrap(paste0(
       IM_PAPER$authors,
       " (", if (is.na(info$year)) "n.d." else info$year, "). ", info$title,

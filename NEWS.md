@@ -174,6 +174,62 @@ set differs, or a session whose state does.
 * The duplicate-key report honours `values_from`, so a non-default pivot no
   longer names its own value column as a culprit.
 
+## Found by reading the real files
+
+A review that read all 21 published files, rather than the bundled extracts,
+found one fault that affects results and four that lie in wait for the first
+release this package was not built against.
+
+* **`NEEDLES` keeps its values.** It is the needle age class in foliage
+  chemistry, published as the letters `C`, `P` and `E`, and was typed as
+  numeric on the strength of its name: all 18,416 non-blank values in `FC`
+  became `NA`, with the coercion warning suppressed. `im_widen()` then failed
+  on 8,807 duplicate keys and blamed `FLAGQUA`, and following its advice to
+  set `values_fn = mean` would have averaged current-year needles with the
+  previous year's. `NEEDLES` is now character and part of the default pivot
+  key, under which `FC` has no duplicates.
+* Numeric coercion is counted rather than suppressed. A published value that
+  is not a number in a column typed as numeric raises a warning of class
+  `icpim_numeric_loss` naming the column, the count and some examples, and
+  `data-raw/verify_release.R` reports it as a problem. No column in any of
+  the 21 files raises it now.
+* The note that a subprogramme mixes statistics asks whether any one sample
+  carries more than one `FLAGSTA`, not whether the table holds more than one.
+  It fired for ten subprogrammes where `S`, `W` and `X` sit on different
+  substances and never share a key - and being once per session, a read of
+  `PC` used it up before `AM`, where 42% of keys do carry several.
+* `dataset-watch` compares the newest release with `IM_BUNDLED_VERSION`.
+  Since the default became `"latest"`, `im_check_version()` there compared the
+  newest release with itself, so a new release would never have opened an
+  issue. Its instructions no longer ask for `IM_DEFAULT_VERSION` to be
+  bumped, and the manual `version` input now does something.
+* A repository answer that is not JSON - a captive portal, a proxy error
+  served with status 200 - is a network failure, not proof that a version
+  does not exist. It used to be remembered as absence for the rest of the
+  session, against the function's own stated rule.
+* Requests have timeouts: ten seconds to connect, thirty for an API answer,
+  and a stall detector on file downloads in place of libcurl's five-minute
+  default. A failed lookup is not repeated for 30 seconds, since one
+  `im_read()` asks several times.
+* `im_update_codes()` checks a list before caching it: the expected columns,
+  at least one row, and sodium's `"NA"` among the substance codes. A list with
+  a renamed header used to be cached as an empty table, after which every
+  code decoded to `NA` with no fallback and no retry. Each list now succeeds
+  or fails on its own; a refresh keeps the cached copy of any list it could
+  not fetch; a cache missing a list is completed on the next read; an error
+  page served as a CSV is rejected; and the cache file is written atomically.
+* The text of a download error is no longer read as a cli template, where
+  braces in it were evaluated as R. A cached file that cannot be moved into
+  place is an error rather than a missing file later.
+* `im_detection_limit(action = "half")` applied twice warns and leaves the
+  values alone. `FLAGQUA` stays `"L"` after halving, as it should, so the
+  second call used to quarter the detection limit.
+* The `substances` filter is case-insensitive, like `sites` and `countries`.
+  No two published codes differ only in case.
+* Offline, `"latest"` settles only on a cached release that holds data. A
+  cache directory with nothing but fetched code lists, or the remains of an
+  interrupted download, used to count.
+
 ## Data
 
 * `im_subprogrammes`, `im_sites`, `im_substances`, `im_parameters`,

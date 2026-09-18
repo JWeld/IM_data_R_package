@@ -28,6 +28,13 @@ Values below detection are published as the detection limit itself with
 \code{FLAGQUA == "L"}. Treating them as measurements biases means upward; simply
 dropping them biases downward. This makes the choice explicit.
 }
+\details{
+\code{"half"} leaves \code{FLAGQUA} as published, so the rows still read as below
+detection afterwards. The table therefore remembers that it has been halved,
+and a second \code{"half"} warns and leaves the values alone rather than
+quartering them. The memory is an attribute, and like \code{\link[=im_provenance]{im_provenance()}} it
+is lost to \code{\link[dplyr:summarise]{dplyr::summarise()}} and to joins.
+}
 \examples{
 pc <- im_read_file(im_example("sample_PC.csv"))
 im_detection_limit(pc, action = "half")

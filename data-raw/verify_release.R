@@ -66,7 +66,20 @@ if (any(renamed)) {
 # --- Read everything ------------------------------------------------------
 res <- list()
 for (sp in man$subprog) {
-  x <- tryCatch(im_read(sp, version = version), error = function(e) e)
+  # A published value that is not a number in a column typed as numeric is
+  # exactly the drift this script exists to catch: it means the column is not
+  # what the package believes it to be (NEEDLES, once), and the read itself
+  # only warns.
+  x <- tryCatch(
+    withCallingHandlers(
+      im_read(sp, version = version),
+      icpim_numeric_loss = function(w) {
+        note(sp, ": ", gsub("\\s+", " ", cli::ansi_strip(conditionMessage(w))))
+        invokeRestart("muffleWarning")
+      }
+    ),
+    error = function(e) e
+  )
   if (inherits(x, "error")) {
     note(sp, ": READ FAILED - ", conditionMessage(x))
     next
