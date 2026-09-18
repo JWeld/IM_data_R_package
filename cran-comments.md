@@ -22,8 +22,9 @@ dataset published at <doi:10.5878/x6fn-gw26>, described in Scientific Data
     et (12:12)
     pretreatment (17:34)
 
-The new-submission note is expected. The flagged words are all spelled as
-intended:
+The new-submission note is expected. The spelling part of it is raised by
+win-builder only; the local `--as-cran` check reports the new submission and
+nothing else. The flagged words are all spelled as intended:
 
 * ICP and IM are the abbreviated name of the monitoring programme whose data
   this package reads, the International Cooperative Programme on Integrated
@@ -37,15 +38,28 @@ intended:
 
 ## Test environments
 
-* macOS 15 (local), R 4.5.3
-* GitHub Actions: ubuntu-latest (R devel, release, oldrel-1),
-  macOS-latest (release), windows-latest (release)
-* win-builder: R-devel and R-release
+Checked at commit e652454, 2026-09-18:
 
-All returned Status: OK apart from the note above, which win-builder is the
-only environment configured to raise. The GitHub Actions runs additionally
-execute the \donttest examples, so the download paths described below have
-been exercised against the live repository.
+* macOS 27 (local), R 4.6.1, `R CMD check --as-cran`: 0 errors, 0 warnings,
+  the new-submission note only.
+* GitHub Actions, all Status: OK:
+  * ubuntu-latest, R devel (2026-09-17 r90559)
+  * ubuntu-latest, R 4.6.1 (release)
+  * ubuntu-latest, R 4.5.3 (oldrel-1)
+  * macOS-latest, R 4.6.1 (release)
+  * windows-latest, R 4.6.1 ucrt (release)
+
+Checked at an earlier commit, and to be repeated before submission:
+
+* win-builder: R-devel and R-release. Both returned Status: OK apart from the
+  note above. The code has changed since (see NEWS.md, "Found by reading the
+  real files"), so these results do not yet cover what will be submitted.
+
+The GitHub Actions runs additionally execute the \donttest examples, so the
+download paths described below have been exercised against the live
+repository. Separately, `data-raw/verify_release.R` was run at the same commit
+against the whole published deposit (21 files, 1,193,331 rows) and reported no
+problems.
 
 ## Network use and files written
 
@@ -64,6 +78,10 @@ that touches the network is handled as follows.
   afterwards, so a check run writes nothing outside the session temporary
   directory. Examples that need no network run unguarded against small
   extracts shipped in `inst/extdata`.
+* No request can hang a check: connections time out after 10 seconds,
+  metadata requests after 30, and a file download that stalls for 60 seconds
+  is abandoned, in place of libcurl's five-minute default. A failed metadata
+  lookup is not repeated for 30 seconds.
 * The package is single-threaded and uses only https.
 * Tests that reach the repository are skipped with `skip_on_cran()` and
   `skip_if_offline()`. The remaining tests run offline against those same
