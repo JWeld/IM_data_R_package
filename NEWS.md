@@ -152,6 +152,30 @@ with the published files as they stand - every one of the 21 carries `AREA`,
 `YYYYMM`, `VALUE` and `UNIT` - so these guard against a release whose column
 set differs, or a session whose state does.
 
+* Examples and the vignette name the bundled release explicitly wherever a
+  `version` is involved, so `R CMD check` never resolves `"latest"` against
+  the repository. Before this, every unguarded example whose `version`
+  defaulted to `im_version()` made one network round trip on a check
+  machine, and the vignette shipped the offline warning in its output. A
+  test asserts that every version the examples and vignette pin is the
+  bundled one, so bumping `IM_BUNDLED_VERSION` without updating them fails
+  rather than sending the check back to the network.
+* `quiet = TRUE` now silences the once-per-session note about which release
+  is being read. It obeyed only the `icpim.quiet` option, because the note
+  is printed while the `version` default is being resolved, before the
+  function's own argument could reach it.
+* `im_manifest()` says a version is not published when the repository has
+  said so, rather than that the file list could not be read.
+* Cached file paths are built from the base name of the published file, so a
+  manifest entry with a directory in its name cannot write outside the cache.
+* A `countries` filter that matches nothing no longer adds a tibble warning
+  about an unknown `COUNTRY` column before its own, on a table without one.
+* The live tests skip when the data repository cannot be reached, not only
+  when there is no network. Institutional networks commonly resolve DNS and
+  block the data hosts, which made them fail rather than skip.
+* The monthly `dataset-watch` workflow runs its verification step under
+  `bash` with `pipefail`, so a failed verification is reported. Piped through
+  `tee` under the default shell, the step's status was always success.
 * A download that fails because the repository is down, with the network
   otherwise up, says so. It used to be reported as the version not being
   published, because the existence check cannot tell an absent release from

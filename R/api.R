@@ -74,6 +74,12 @@ im_api_dataset <- function(version = NULL) {
   js$dataset
 }
 
+# Has the repository said that this version does not exist? FALSE also when
+# it has not been asked, or could not answer: only a definite "no" counts.
+version_absent <- function(version) {
+  isTRUE(the[[paste0("api_", version, "_absent")]])
+}
+
 # Seconds before a failed lookup is tried again.
 IM_API_RETRY_AFTER <- 30
 
@@ -293,11 +299,23 @@ im_manifest <- function(version = im_version(),
   # unusable.
   f <- if (is.null(d)) NULL else d$file
   if (is.null(f) || is.null(f$name) || !length(f$name) || is.null(f$type)) {
-    cli::cli_warn(c(
-      "Could not read the file list from the repository; using the bundled
-       catalogue.",
-      "i" = "It describes version {.val {IM_BUNDLED_VERSION}} and may be out of date."
-    ))
+    # A version the repository has just said does not exist is a different
+    # problem from a repository that could not be read, and the advice
+    # differs: pick a version that exists, rather than try again later.
+    if (is.null(d) && version_absent(version)) {
+      cli::cli_warn(c(
+        "Version {.val {version}} is not published; using the bundled
+         catalogue.",
+        "i" = "It describes version {.val {IM_BUNDLED_VERSION}}.
+               {.fn im_latest_version} says which release is newest."
+      ))
+    } else {
+      cli::cli_warn(c(
+        "Could not read the file list from the repository; using the bundled
+         catalogue.",
+        "i" = "It describes version {.val {IM_BUNDLED_VERSION}} and may be out of date."
+      ))
+    }
     out <- tibble::tibble(
       subprog = im_subprogrammes$subprog,
       name    = im_subprogrammes$name,

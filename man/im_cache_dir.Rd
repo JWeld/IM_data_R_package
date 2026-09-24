@@ -27,6 +27,8 @@ environment variable \code{ICPIM_CACHE_DIR}. Using a project-local directory is
 a good way to make an analysis self-contained.
 }
 \examples{
-# Where files would be stored (does not create anything):
-im_cache_dir(create = FALSE)
+# Where files would be stored (does not create anything). Version 2 is the
+# release bundled with the package, so naming it needs no network; the
+# default, "latest", would ask the repository which release is newest.
+im_cache_dir(version = "2", create = FALSE)
 }

@@ -195,8 +195,7 @@ test_that("resolve_subprog reports the codes valid for the release asked for", {
 # Live repository ---------------------------------------------------------
 
 test_that("the repository reports a version and a file list", {
-  skip_on_cran()
-  skip_if_offline()
+  skip_if_repository_unreachable()
 
   latest <- im_latest_version()
   expect_type(latest, "character")
@@ -212,16 +211,14 @@ test_that("the repository reports a version and a file list", {
 })
 
 test_that("a version that does not exist is reported as absent, not as an error", {
-  skip_on_cran()
-  skip_if_offline()
+  skip_if_repository_unreachable()
   # The API answers 200 with a null body for these, so status alone would lie.
   expect_false(im_version_exists("99"))
   expect_true(im_version_exists("1"))
 })
 
 test_that("im_check_version compares the version being read with the newest", {
-  skip_on_cran()
-  skip_if_offline()
+  skip_if_repository_unreachable()
   chk <- im_check_version(quiet = TRUE)
   expect_named(chk, c("current", "latest", "newer_available"))
   expect_equal(chk$current, im_version())

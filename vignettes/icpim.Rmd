@@ -10,14 +10,18 @@ vignette: >
 ```{r, include = FALSE}
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 library(icpim)
+# The default version, "latest", is looked up in the repository. This vignette
+# pins the release the bundled code lists come from, so it builds offline.
+options(icpim.version = "2")
 ```
 
-The ICP Integrated Monitoring programme has measured whole forested catchments
-since the late 1980s - deposition, soil, soil water, groundwater, runoff,
-vegetation and biota at the same plots, year after year. The open dataset
+The ICP Integrated Monitoring programme measures whole forested catchments -
+deposition, soil, soil water, groundwater, runoff, vegetation and biota at the
+same plots, year after year. The open dataset
 ([doi:10.5878/x6fn-gw26](https://doi.org/10.5878/x6fn-gw26)) publishes that
 record as 21 CSV files, one per subprogramme, covering 55 sites in 14 countries
-and about 1.2 million observations.
+and about 1.2 million observations from 1967 to 2020, most subprogrammes from
+the late 1980s onwards.
 
 This package downloads those files, caches them, reads them with the right
 column types, and decodes the code lists. It also handles a handful of
@@ -250,6 +254,9 @@ well as adding new ones. Pin the release you analysed, and record it:
 ```{r, eval = FALSE}
 options(icpim.version = "2")
 ```
+
+This vignette does exactly that: it pins version 2, the release the bundled
+code lists were built from, so it builds without a network connection.
 
 Each release has its own DOI, and `im_doi()` and `im_cite()` follow the
 version being read, so what you cite is always what you read. The provenance

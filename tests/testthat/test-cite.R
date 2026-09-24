@@ -83,8 +83,7 @@ test_that("the concept DOI does not depend on the pinned version", {
 })
 
 test_that("metadata pulled from the API agrees with the bundled constants", {
-  skip_on_cran()
-  skip_if_offline()
+  skip_if_repository_unreachable()
   # Force the bundled release down the API path and compare with what we ship.
   bundled <- IM_BUNDLED_VERSION
   local_mocked_bindings(IM_BUNDLED_VERSION = "0")

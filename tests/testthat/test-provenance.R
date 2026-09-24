@@ -59,8 +59,7 @@ test_that("the sodium count never exceeds the rows returned", {
 })
 
 test_that("a full read records the release it came from", {
-  skip_on_cran()
-  skip_if_offline()
+  skip_if_repository_unreachable()
   withr::local_options(
     icpim.cache_dir = withr::local_tempdir(),
     icpim.version = "1",

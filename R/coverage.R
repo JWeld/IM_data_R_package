@@ -29,8 +29,8 @@
 #' }
 #' }
 im_coverage <- function(subprog = "all", version = im_version(), quiet = NULL) {
-  version <- resolve_version(version)
   quiet <- quiet %||% getOption("icpim.quiet", FALSE)
+  version <- with_quiet(quiet, resolve_version(version))
   codes <- resolve_subprog(subprog, several.ok = TRUE, version = version)
   meta  <- known_subprogs(version)
 
@@ -43,7 +43,7 @@ im_coverage <- function(subprog = "all", version = im_version(), quiet = NULL) {
       subprog        = code,
       name           = meta$name[match(code, meta$subprog)],
       n_rows         = nrow(x),
-      n_sites        = length(unique(x$AREA)),
+      n_sites        = length(unique(x[["AREA"]])),
       first_year     = suppressWarnings(min(x$year, na.rm = TRUE)),
       last_year      = suppressWarnings(max(x$year, na.rm = TRUE)),
       n_determinands = length(unique(x[[key]][!is.na(x[[key]])])),

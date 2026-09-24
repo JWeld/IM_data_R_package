@@ -37,7 +37,8 @@
 #' @export
 #' @examples
 #' raw <- im_read_file(im_example("sample_PC.csv"))
-#' im_decode(raw)
+#' # Version 2's code lists are bundled, so naming it keeps this offline.
+#' im_decode(raw, version = "2")
 im_decode <- function(x, quiet = TRUE, version = im_version()) {
   stopifnot(is.data.frame(x))
 
@@ -150,7 +151,7 @@ report_unmatched <- function(codes, decoded, what) {
 #' @return A tibble.
 #' @export
 #' @examples
-#' im_codes("substance", "sodium")
+#' im_codes("substance", "sodium", version = "2")   # the bundled release
 #' im_codes("flag")
 im_codes <- function(type = c("substance", "parameter", "determination",
                               "pretreatment", "flag"),

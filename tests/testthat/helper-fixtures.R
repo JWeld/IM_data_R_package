@@ -32,3 +32,13 @@ local_planted_pc <- function(env = parent.frame()) {
                       "PC_precipitation_chemistry.csv"))
   invisible(dir)
 }
+
+# The live tests need the data repository, not just a network. On many
+# institutional networks DNS works and the data hosts are blocked, so
+# skip_if_offline() alone lets them run and fail. One API call decides, and
+# im_latest_version() remembers a positive answer for the session.
+skip_if_repository_unreachable <- function() {
+  skip_on_cran()
+  skip_if_offline()
+  if (is.na(im_latest_version())) skip("the data repository cannot be reached")
+}

@@ -25,7 +25,7 @@
 #' @return A wider tibble.
 #' @export
 #' @examples
-#' pc <- im_read_file(im_example("sample_PC.csv")) |> im_decode()
+#' pc <- im_read_file(im_example("sample_PC.csv")) |> im_decode(version = "2")
 #' im_widen(pc)
 im_widen <- function(x,
                      names_from = NULL,

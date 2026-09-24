@@ -26,5 +26,5 @@ not built against, the code lists fetched for it. Both are listed, so what
 \code{im_cache_list()} shows is what \code{im_cache_clear()} would remove.
 }
 \examples{
-im_cache_list()
+im_cache_list(version = "2")   # the bundled release; see im_version()
 }

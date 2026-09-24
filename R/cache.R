@@ -16,8 +16,10 @@
 #' @return The cache path, as a character vector of length one.
 #' @export
 #' @examples
-#' # Where files would be stored (does not create anything):
-#' im_cache_dir(create = FALSE)
+#' # Where files would be stored (does not create anything). Version 2 is the
+#' # release bundled with the package, so naming it needs no network; the
+#' # default, "latest", would ask the repository which release is newest.
+#' im_cache_dir(version = "2", create = FALSE)
 im_cache_dir <- function(version = im_version(), create = FALSE) {
   version <- resolve_version(version)
   path <- file.path(cache_root(), paste0("v", version))
@@ -49,7 +51,7 @@ cache_root <- function() {
 #'   cached. `im_cache_clear()` returns, invisibly, the paths it removed.
 #' @export
 #' @examples
-#' im_cache_list()
+#' im_cache_list(version = "2")   # the bundled release; see im_version()
 im_cache_list <- function(version = im_version()) {
   version <- resolve_version(version)
   dir <- im_cache_dir(version, create = FALSE)

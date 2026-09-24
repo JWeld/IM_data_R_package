@@ -35,7 +35,9 @@ always resolves to the newest release. Cite the version you actually
 analysed, not the concept DOI.
 }
 \examples{
-im_doi()
+# Version 2 is the release bundled with the package, so these need no
+# network. The default, "latest", asks the repository which is newest.
+im_doi(version = "2")
 im_doi(concept = TRUE)
-im_dataset_info()$title
+im_dataset_info(version = "2")$title
 }

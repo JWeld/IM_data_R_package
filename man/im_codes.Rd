@@ -28,6 +28,6 @@ directly as \link{im_substances}, \link{im_parameters}, \link{im_determinations}
 \link{im_pretreatments} and \link{im_flags}.
 }
 \examples{
-im_codes("substance", "sodium")
+im_codes("substance", "sodium", version = "2")   # the bundled release
 im_codes("flag")
 }

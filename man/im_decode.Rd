@@ -49,5 +49,6 @@ file, told apart only by \code{PARLIST}.
 
 \examples{
 raw <- im_read_file(im_example("sample_PC.csv"))
-im_decode(raw)
+# Version 2's code lists are bundled, so naming it keeps this offline.
+im_decode(raw, version = "2")
 }

@@ -1,6 +1,6 @@
 #' Small extracts of the real data, bundled for offline use
 #'
-#' Three genuine extracts from version 1 of the deposit, small enough to ship
+#' Four genuine extracts from version 1 of the deposit, small enough to ship
 #' with the package. They exist so that examples, tests and the vignette run
 #' without a network connection, and because each one carries a trap worth
 #' demonstrating:

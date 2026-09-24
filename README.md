@@ -12,7 +12,8 @@ Integrated Monitoring of Air Pollution Effects on Ecosystems (ICP IM)** from R.
 The dataset ([doi:10.5878/x6fn-gw26](https://doi.org/10.5878/x6fn-gw26))
 publishes long-term integrated ecosystem monitoring from European forested
 catchments: 21 subprogrammes, 55 sites in 14 countries, roughly 1.2 million
-observations from 1967 to 2020, covering deposition, soil, soil water,
+observations from 1967 to 2020 (most subprogrammes from the late 1980s
+onwards), covering deposition, soil, soil water,
 groundwater, runoff, vegetation and biota. It is updated at least annually and released
 under CC BY 4.0.
 

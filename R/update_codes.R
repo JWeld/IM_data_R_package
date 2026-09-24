@@ -145,7 +145,7 @@ read_code_cache <- function(version) {
 #' }
 im_update_codes <- function(version = im_version(), quiet = NULL) {
   quiet <- quiet %||% getOption("icpim.quiet", FALSE)
-  version <- resolve_version(version)
+  version <- with_quiet(quiet, resolve_version(version))
   dest <- code_cache_path(version)
 
   tabs <- list()

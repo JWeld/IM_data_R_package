@@ -49,7 +49,7 @@
 im_download <- function(subprog, overwrite = FALSE, quiet = NULL,
                         version = im_version()) {
   quiet <- quiet %||% getOption("icpim.quiet", FALSE)
-  version <- resolve_version(version)
+  version <- with_quiet(quiet, resolve_version(version))
   codes <- resolve_subprog(subprog, several.ok = TRUE, version = version)
   meta  <- known_subprogs(version)
   meta  <- meta[match(codes, meta$subprog), ]
@@ -63,7 +63,10 @@ im_download <- function(subprog, overwrite = FALSE, quiet = NULL,
 
   paths <- vapply(seq_len(nrow(meta)), function(i) {
     file <- meta$file[i]
-    dest <- file.path(dir, file)
+    # basename(): for a release this package was not built against, the name
+    # comes from the repository's manifest, and a name with a directory in it
+    # must not write outside the cache.
+    dest <- file.path(dir, basename(file))
     if (file.exists(dest) && !overwrite) {
       if (!quiet) cli::cli_alert_info("{.field {meta$subprog[i]}} already cached.")
       return(dest)
@@ -182,10 +185,10 @@ is_web_page <- function(path) {
 
 # Path to a cached file, downloading it first if needed.
 im_local_path <- function(subprog, version = im_version(), quiet = NULL) {
-  version <- resolve_version(version)
+  version <- with_quiet(quiet, resolve_version(version))
   code <- resolve_subprog(subprog, version = version)
   file <- subprog_file(code, version)
-  dest <- file.path(im_cache_dir(version, create = FALSE), file)
+  dest <- file.path(im_cache_dir(version, create = FALSE), basename(file))
   if (!file.exists(dest)) {
     im_download(code, quiet = quiet, version = version)
   }

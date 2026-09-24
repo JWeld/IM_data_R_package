@@ -28,5 +28,5 @@ and the deposit line says what is missing, rather than pointing at the wrong
 release.
 }
 \examples{
-im_cite()
+im_cite(version = "2")   # the bundled release; see im_version()
 }

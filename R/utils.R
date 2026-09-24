@@ -1,5 +1,18 @@
 `%||%` <- function(x, y) if (is.null(x)) y else x
 
+# Evaluate `expr` with a function's own `quiet` argument standing in for the
+# icpim.quiet option. resolve_version() prints its once-per-session note
+# according to the option alone, and a `version = im_version()` default is
+# forced inside it, so a function's `quiet = TRUE` cannot reach that note any
+# other way. NULL means "no opinion": leave the option as it is.
+with_quiet <- function(quiet, expr) {
+  if (!is.null(quiet)) {
+    old <- options(icpim.quiet = isTRUE(quiet))
+    on.exit(options(old), add = TRUE)
+  }
+  expr
+}
+
 # One character value from an API field. The repository's answers are not
 # under this package's control, and a record can arrive without a field: NULL
 # or zero-length must become NA rather than character(0), which turns a later

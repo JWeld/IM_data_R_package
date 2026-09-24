@@ -127,7 +127,7 @@ im_read <- function(subprog,
                     quiet = NULL,
                     version = im_version()) {
   quiet <- quiet %||% getOption("icpim.quiet", FALSE)
-  version <- resolve_version(version)
+  version <- with_quiet(quiet, resolve_version(version))
   code  <- resolve_subprog(subprog, version = version)
   path  <- im_local_path(code, version = version, quiet = quiet)
 
@@ -177,7 +177,7 @@ im_read <- function(subprog,
     full <- if ("COUNTRY" %in% names(out)) toupper(out$COUNTRY) else rep(NA_character_, nrow(out))
     keep <- iso %in% cc | (!is.na(full) & full %in% cc)
     out <- filter_rows(out, keep, "countries", countries,
-                       unique(c(substr(out$AREA, 1, 2), out$COUNTRY)))
+                       unique(c(substr(out$AREA, 1, 2), out[["COUNTRY"]])))
   }
   if (!is.null(years)) {
     require_col(out, "year", "years")

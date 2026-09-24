@@ -70,9 +70,11 @@ IM_FILE_BASE <- "https://doris.snd.se/api/file"
 #'   (`im_dataset_info()`).
 #' @export
 #' @examples
-#' im_doi()
+#' # Version 2 is the release bundled with the package, so these need no
+#' # network. The default, "latest", asks the repository which is newest.
+#' im_doi(version = "2")
 #' im_doi(concept = TRUE)
-#' im_dataset_info()$title
+#' im_dataset_info(version = "2")$title
 im_doi <- function(version = im_version(), concept = FALSE) {
   if (isTRUE(concept)) return(IM_DOI_CONCEPT)
   info <- im_dataset_info(version)
@@ -149,7 +151,7 @@ im_dataset_info <- function(version = im_version()) {
 #'   side effect of printing.
 #' @export
 #' @examples
-#' im_cite()
+#' im_cite(version = "2")   # the bundled release; see im_version()
 im_cite <- function(version = im_version()) {
   version <- resolve_version(version)
   info <- im_dataset_info(version)
