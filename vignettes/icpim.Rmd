@@ -10,6 +10,10 @@ vignette: >
 ```{r, include = FALSE}
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 library(icpim)
+# Pinned to the release the bundled code lists come from, so the vignette
+# builds the same way with or without a network connection: resolving the
+# default "latest" would otherwise ask the repository which release is newest.
+options(icpim.version = "2")
 ```
 
 The ICP Integrated Monitoring programme has measured whole forested catchments
@@ -250,6 +254,9 @@ well as adding new ones. Pin the release you analysed, and record it:
 ```{r, eval = FALSE}
 options(icpim.version = "2")
 ```
+
+This vignette does the same, for the same reason: it pins version 2 so that
+it builds identically with or without a network connection.
 
 Each release has its own DOI, and `im_doi()` and `im_cite()` follow the
 version being read, so what you cite is always what you read. The provenance

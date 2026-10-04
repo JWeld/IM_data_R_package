@@ -61,6 +61,10 @@ jobs:
       - name: Verify the package against the published data
         id: verify
         continue-on-error: true
+        # Named explicitly: GitHub's default shell runs without pipefail, so
+        # the `| tee` below would report tee's exit status and a failing
+        # verification would never reach the issue step.
+        shell: bash
         env:
           # Blank means the newest release, which is what verify_release.R and
           # the package both default to.
