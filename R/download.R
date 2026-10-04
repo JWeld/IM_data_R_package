@@ -87,11 +87,8 @@ im_download <- function(subprog, overwrite = FALSE, quiet = NULL,
 
 # Atomic download. Errors are turned into one clear message rather than curl's.
 fetch_file <- function(url, dest, quiet = TRUE, version = im_version()) {
-  tmp <- paste0(dest, ".part-", Sys.getpid())
-  on.exit(unlink(tmp), add = TRUE)
-
-  ok <- tryCatch(
-    {
+  moved <- write_atomically(dest, function(tmp) {
+    tryCatch(
       # curl's byte-by-byte progress is useful at a prompt and pure noise in a
       # script or a log, so it follows interactivity rather than `quiet`.
       curl::curl_download(
@@ -99,85 +96,96 @@ fetch_file <- function(url, dest, quiet = TRUE, version = im_version()) {
         quiet = quiet || !interactive(),
         mode = "wb",
         handle = im_handle()
-      )
-      TRUE
-    },
-    error = function(e) {
-      # Four quite different causes, and the advice differs completely
-      # between them: no connection, a repository that cannot be reached, a
-      # release that was never published, or a file that has moved within a
-      # release that exists. A 404 blamed on the network sends the reader
-      # looking in the wrong place - and an outage blamed on the version
-      # sends them re-pinning a release that exists. The existence check
-      # cannot tell absent from unreachable on its own, so ask about the
-      # dataset as a whole first.
-      cause <- if (!curl::has_internet()) {
-        c("i" = "There is no network connection.")
-      } else if (is.null(im_api_dataset(NULL))) {
-        c("i" = "The repository could not be reached. Try again later.")
-      } else if (!im_version_exists(version)) {
-        c("i" = "Version {.val {version}} is not published.",
-          "i" = "Pin one that is with {.code options(icpim.version = ...)};
-                 {.fn im_latest_version} says which is newest.")
-      } else {
-        c("i" = "Version {.val {version}} exists, so the file may have been
-                 renamed or withdrawn.",
-          "i" = "See {.fn im_manifest} for what that release publishes.")
+      ),
+      error = function(e) {
+        # Four quite different causes, and the advice differs completely
+        # between them: no connection, a repository that cannot be reached, a
+        # release that was never published, or a file that has moved within a
+        # release that exists. A 404 blamed on the network sends the reader
+        # looking in the wrong place - and an outage blamed on the version
+        # sends them re-pinning a release that exists. The existence check
+        # cannot tell absent from unreachable on its own, so ask about the
+        # dataset as a whole first.
+        cause <- if (!curl::has_internet()) {
+          c("i" = "There is no network connection.")
+        } else if (is.null(im_api_dataset(NULL))) {
+          c("i" = "The repository could not be reached. Try again later.")
+        } else if (!im_version_exists(version)) {
+          c("i" = "Version {.val {version}} is not published.",
+            "i" = "Pin one that is with {.code options(icpim.version = ...)};
+                   {.fn im_latest_version} says which is newest.")
+        } else {
+          c("i" = "Version {.val {version}} exists, so the file may have been
+                   renamed or withdrawn.",
+            "i" = "See {.fn im_manifest} for what that release publishes.")
+        }
+        cli::cli_abort(
+          c(
+            "Could not download {.url {url}}.",
+            # Interpolated, not pasted in: cli reads a bare string as a template,
+            # and an error text containing braces would be evaluated as R.
+            "x" = "{conditionMessage(e)}",
+            cause,
+            "i" = paste(
+              "The files can also be downloaded by hand from",
+              "{.url https://doi.org/{IM_DOI_CONCEPT}} into",
+              "{.path {dirname(dest)}}."
+            )
+          ),
+          call = NULL
+        )
       }
-      cli::cli_abort(
-        c(
-          "Could not download {.url {url}}.",
-          # Interpolated, not pasted in: cli reads a bare string as a template,
-          # and an error text containing braces would be evaluated as R.
-          "x" = "{conditionMessage(e)}",
-          cause,
-          "i" = paste(
-            "The files can also be downloaded by hand from",
-            "{.url https://doi.org/{IM_DOI_CONCEPT}} into",
-            "{.path {dirname(dest)}}."
-          )
-        ),
-        call = NULL
-      )
-    }
-  )
+    )
 
-  # A repository error page is HTML, not CSV, and would otherwise be cached and
-  # then fail confusingly at parse time. Likewise a zero-byte answer - which
-  # readLines() cannot see, since an empty file has no first line to check -
-  # would be installed as cached and then fail on every later read until the
-  # user finds `overwrite = TRUE`.
-  if (ok) {
-    if (!isTRUE(file.size(tmp) > 0)) {
-      cli::cli_abort(
+    # Refused before it reaches the cache: either kind of non-CSV would
+    # otherwise be installed as cached and fail on every later read until the
+    # user finds `overwrite = TRUE`.
+    switch(downloaded_csv_problem(tmp) %||% "none",
+      empty = cli::cli_abort(
         c("The server returned an empty file for {.url {url}}.",
           "i" = "Nothing was cached. Try again, or download by hand from
                  {.url https://doi.org/{IM_DOI_CONCEPT}}."),
         call = NULL
-      )
-    }
-    if (is_web_page(tmp)) {
-      cli::cli_abort(
+      ),
+      `web page` = cli::cli_abort(
         c("The server returned a web page rather than a CSV file.",
           "i" = "Version {.val {version}} may not exist."),
         call = NULL
       )
-    }
-    if (!file.rename(tmp, dest)) {
-      cli::cli_abort(
-        c("Downloaded {.url {url}} but could not move it into the cache.",
-          "i" = "Check that {.path {dirname(dest)}} is writable."),
-        call = NULL
-      )
-    }
+    )
+  })
+
+  if (!moved) {
+    cli::cli_abort(
+      c("Downloaded {.url {url}} but could not move it into the cache.",
+        "i" = "Check that {.path {dirname(dest)}} is writable."),
+      call = NULL
+    )
   }
   invisible(dest)
 }
 
-# Does a downloaded file start like HTML rather than CSV?
-is_web_page <- function(path) {
+# Write `dest` through a temporary file beside it, moved into place only once
+# `write(tmp)` has returned, so an interrupted write cannot leave a truncated
+# file that later looks cached. The `.part-` suffix is what
+# newest_cached_version() relies on to ignore the remains of one. Returns
+# whether the move succeeded; the temporary file is removed either way.
+write_atomically <- function(dest, write) {
+  tmp <- paste0(dest, ".part-", Sys.getpid())
+  on.exit(unlink(tmp), add = TRUE)
+  write(tmp)
+  file.rename(tmp, dest)
+}
+
+# Why a downloaded file is not a CSV: "empty" or "web page", or NULL when it
+# looks fine. A repository error page is HTML, and a zero-byte answer has no
+# first line for the HTML test to see, so both are checked here, once, for
+# every download the package makes.
+downloaded_csv_problem <- function(path) {
+  if (!isTRUE(file.size(path) > 0)) return("empty")
   first <- readLines(path, n = 1L, warn = FALSE, encoding = "UTF-8")
-  length(first) > 0L && grepl("^\\s*<", first)
+  if (length(first) > 0L && grepl("^\\s*<", first)) return("web page")
+  NULL
 }
 
 # Path to a cached file, downloading it first if needed.

@@ -1,16 +1,7 @@
 # Regressions found by reading the real files rather than the extracts.
-
-clear_state <- function(pattern) {
-  rm(list = grep(pattern, ls(the, all.names = TRUE), value = TRUE), envir = the)
-}
+# csv_file() and local_clear_state() are in helper-fixtures.R.
 
 # Typing -------------------------------------------------------------------
-
-csv_file <- function(lines, env = parent.frame()) {
-  path <- withr::local_tempfile(fileext = ".csv", .local_envir = env)
-  writeLines(lines, path)
-  path
-}
 
 test_that("NEEDLES keeps its letter codes", {
   # Foliage chemistry publishes the needle age class as C, P and E. Typed as
@@ -37,10 +28,10 @@ test_that("a value that is not a number is reported, not silently dropped", {
     "SE14,0001,201511,CA,<0.2",
     "SE14,0001,201512,CA,"
   ))
-  expect_warning(x <- im_read_file(path), class = "icpim_numeric_loss")
-  expect_equal(x$VALUE, c(1.5, NA, NA))
   # The blank is simply missing, so exactly one value is reported.
-  expect_warning(im_read_file(path), "1 value in VALUE")
+  expect_warning(x <- im_read_file(path), "1 value in VALUE",
+                 class = "icpim_numeric_loss")
+  expect_equal(x$VALUE, c(1.5, NA, NA))
 })
 
 # FLAGSTA nudge -------------------------------------------------------------
@@ -69,8 +60,7 @@ test_that("several statistics in a table is not several on one sample", {
 # API answers ---------------------------------------------------------------
 
 test_that("a page that is not JSON is a network failure, not an absent version", {
-  clear_state("^api_")
-  withr::defer(clear_state("^api_"))
+  local_clear_state("^api_")
   local_mocked_bindings(IM_API_RETRY_AFTER = 0)
   n <- 0L
   local_mocked_bindings(
@@ -88,8 +78,7 @@ test_that("a page that is not JSON is a network failure, not an absent version",
 })
 
 test_that("a failed lookup is not repeated within the retry window", {
-  clear_state("^api_")
-  withr::defer(clear_state("^api_"))
+  local_clear_state("^api_")
   n <- 0L
   local_mocked_bindings(
     curl_fetch_memory = function(url, ...) { n <<- n + 1L; stop("timed out") },
@@ -101,8 +90,7 @@ test_that("a failed lookup is not repeated within the retry window", {
 })
 
 test_that("only the repository's own null answer is remembered as absence", {
-  clear_state("^api_")
-  withr::defer(clear_state("^api_"))
+  local_clear_state("^api_")
   n <- 0L
   local_mocked_bindings(
     curl_fetch_memory = function(url, ...) {
@@ -135,8 +123,7 @@ test_that("a code list with a renamed header is not usable, and says so", {
 
 test_that("unusable lists are not cached, and a partial cache is completed", {
   withr::local_options(icpim.cache_dir = withr::local_tempdir(), icpim.quiet = TRUE)
-  clear_state("^codes_")
-  withr::defer(clear_state("^codes_"))
+  local_clear_state("^codes_")
 
   good <- c(
     substance_codes = "SubstanceCode,Name,Group,CASnumber,Description\nNA      ,Sodium,1,NULL,NULL\nXX9,Newium,1,NULL,NULL",
@@ -171,21 +158,6 @@ test_that("unusable lists are not cached, and a partial cache is completed", {
   im_update_codes("9", quiet = TRUE)
   expect_setequal(names(read_code_cache("9")), c("substances", "determinations"))
   expect_false(any(grepl("\\.part-", list.files(im_cache_dir("9")))))
-})
-
-# Messages ----------------------------------------------------------------------
-
-test_that("braces in a download error are text, not code", {
-  withr::local_options(icpim.cache_dir = withr::local_tempdir())
-  local_mocked_bindings(
-    curl_download = function(...) stop("schannel: failed {0x80090326}"),
-    has_internet = function(...) FALSE,
-    .package = "curl"
-  )
-  expect_error(
-    fetch_file("https://example.org/x.csv", file.path(tempdir(), "x.csv"), version = "2"),
-    "{0x80090326}", fixed = TRUE
-  )
 })
 
 # Smaller things ------------------------------------------------------------------

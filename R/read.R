@@ -411,15 +411,24 @@ filter_rows <- function(x, keep, arg, wanted, available) {
 # but the statistic, its value and what is derived from them exist: there are
 # then more distinct (key, FLAGSTA) pairs than distinct keys.
 has_mixed_stats <- function(x) {
-  if (!"FLAGSTA" %in% names(x) || !nrow(x)) return(FALSE)
-  # An unflagged row states no statistic, so it cannot mix with one.
-  x <- x[!is.na(x$FLAGSTA), , drop = FALSE]
-  if (length(unique(x$FLAGSTA)) < 2L) return(FALSE)
+  if (!"FLAGSTA" %in% names(x)) return(FALSE)
+  # An unflagged row states no statistic, so it cannot mix with one. Decided
+  # on the flag column alone before any of the table is copied: most
+  # subprogrammes carry a single statistic and leave here.
+  flagged <- !is.na(x$FLAGSTA)
+  stat <- x$FLAGSTA[flagged]
+  if (length(unique(stat)) < 2L) return(FALSE)
+  # The columns this package derives from published ones (date from YYYYMM,
+  # substance from SUBST, and so on) cannot split a key their sources do not,
+  # so hashing them would only cost time.
   key <- setdiff(names(x), c("VALUE", "UNIT", "FLAGSTA", "FLAGQUA",
-                             "stat", "quality"))
+                             "stat", "quality", "substance", "parameter",
+                             "determination", "pretreatment",
+                             "date", "year", "month"))
   if (!length(key)) return(FALSE)
-  # dplyr::distinct() rather than duplicated(): some sixty times faster on the
-  # larger subprogrammes, and this runs on every read until the nudge fires.
-  nrow(dplyr::distinct(x[, c(key, "FLAGSTA"), drop = FALSE])) >
-    nrow(dplyr::distinct(x[, key, drop = FALSE]))
+  # dplyr::n_distinct() rather than duplicated(): some sixty times faster on
+  # the larger subprogrammes, and this runs on every read until the nudge
+  # fires.
+  keys <- x[flagged, key, drop = FALSE]
+  dplyr::n_distinct(keys, stat) > dplyr::n_distinct(keys)
 }

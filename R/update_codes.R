@@ -42,44 +42,44 @@ read_doc_csv <- function(path) {
   x
 }
 
+# Rows with no code cannot be joined to anything. `[["code"]]`, not `$code`: a
+# file whose header has changed builds a table with no such column, which
+# valid_code_table() then rejects - and `$` on a tibble would warn about the
+# column on the way.
+keep_coded <- function(tab) tab[!is.na(tab[["code"]]), ]
+
 # Turn the raw documentation frames into the package's tidy lookups.
-#
-# `[["code"]]`, not `$code`, when dropping uncoded rows: a file whose header
-# has changed builds a table with no such column, which valid_code_table()
-# then rejects - and `$` on a tibble would warn about the column on the way.
 build_code_tables <- function(raw) {
   out <- list()
   if (!is.null(raw$substances)) {
     s <- raw$substances
-    out$substances <- tibble::tibble(
+    out$substances <- keep_coded(tibble::tibble(
       code = s$SubstanceCode, name = s$Name,
       group = suppressWarnings(as.integer(s$Group)),
       cas = s$CASnumber, description = s$Description
-    )
-    out$substances <- out$substances[!is.na(out$substances[["code"]]), ]
+    ))
   }
   if (!is.null(raw$parameters)) {
     p <- raw$parameters
-    out$parameters <- tibble::tibble(
+    out$parameters <- keep_coded(tibble::tibble(
       subprog = p$Subprogramme, subprog_name = p$SubprogName,
       code = p$Parameter, name = p$ParamName, list = p$ParamList,
       unit = p$Unit,
       minimum = suppressWarnings(as.numeric(p$Minimum)),
       maximum = suppressWarnings(as.numeric(p$Maximum))
-    )
-    out$parameters <- out$parameters[!is.na(out$parameters[["code"]]), ]
+    ))
   }
   if (!is.null(raw$determinations)) {
     d <- raw$determinations
-    out$determinations <- tibble::tibble(
+    out$determinations <- keep_coded(tibble::tibble(
       code = d$DeterminationCode, name = d$Description, note = d$NOTE
-    )
-    out$determinations <- out$determinations[!is.na(out$determinations[["code"]]), ]
+    ))
   }
   if (!is.null(raw$pretreatments)) {
     p <- raw$pretreatments
-    out$pretreatments <- tibble::tibble(code = p$PretreatmentCode, name = p$Description)
-    out$pretreatments <- out$pretreatments[!is.na(out$pretreatments[["code"]]), ]
+    out$pretreatments <- keep_coded(
+      tibble::tibble(code = p$PretreatmentCode, name = p$Description)
+    )
   }
   if (!is.null(raw$sites)) {
     s <- raw$sites
@@ -149,6 +149,9 @@ im_update_codes <- function(version = im_version(), quiet = NULL) {
   dest <- code_cache_path(version)
 
   tabs <- list()
+  # One handle for the five files, so the connection to the repository is
+  # reused rather than opened afresh for each.
+  h <- im_handle()
   for (nm in names(IM_CODE_FILES)) {
     tmp <- tempfile(fileext = ".csv")
     # Each list on its own, start to finish: a download that fails, an error
@@ -156,8 +159,9 @@ im_update_codes <- function(version = im_version(), quiet = NULL) {
     # that one list, not the other four and not the read that asked for them.
     tab <- tryCatch({
       curl::curl_download(im_file_url(IM_CODE_FILES[[nm]], "documentation", version),
-                          tmp, quiet = TRUE, mode = "wb", handle = im_handle())
-      if (!isTRUE(file.size(tmp) > 0) || is_web_page(tmp)) stop("not a CSV file")
+                          tmp, quiet = TRUE, mode = "wb", handle = h)
+      problem <- downloaded_csv_problem(tmp)
+      if (!is.null(problem)) stop("not a CSV file: ", problem)
       build_code_tables(stats::setNames(list(read_doc_csv(tmp)), nm))[[nm]]
     }, error = function(e) NULL)
     unlink(tmp)
@@ -179,13 +183,8 @@ im_update_codes <- function(version = im_version(), quiet = NULL) {
   old  <- read_code_cache(version)
   tabs <- c(tabs, old[setdiff(names(old), names(tabs))])
 
-  # Written beside its destination and moved into place, like the data files,
-  # so an interrupted write cannot leave half an .rds behind.
   dir.create(dirname(dest), recursive = TRUE, showWarnings = FALSE)
-  part <- paste0(dest, ".part-", Sys.getpid())
-  on.exit(unlink(part), add = TRUE)
-  saveRDS(tabs, part)
-  if (!file.rename(part, dest)) return(invisible(NULL))
+  if (!write_atomically(dest, function(p) saveRDS(tabs, p))) return(invisible(NULL))
   if (!quiet) {
     cli::cli_alert_success(
       "Cached the version {version} code lists ({length(tabs)} table{?s})."
@@ -216,13 +215,11 @@ codes_for <- function(which, version = im_version()) {
   # this list - an earlier fetch got some files and not others - is fetched
   # again too, rather than left to fall back for ever.
   tab <- read_code_cache(version)[[which]]
-  if (!valid_code_table(tab, which)) {
-    key <- paste0("codes_tried_", version)
-    if (!isTRUE(the[[key]])) {
-      the[[key]] <- TRUE
-      im_update_codes(version, quiet = TRUE)
-      tab <- read_code_cache(version)[[which]]
-    }
+  tried <- paste0("codes_tried_", version)
+  if (!valid_code_table(tab, which) && !isTRUE(the[[tried]])) {
+    the[[tried]] <- TRUE
+    im_update_codes(version, quiet = TRUE)
+    tab <- read_code_cache(version)[[which]]
   }
   if (!valid_code_table(tab, which)) return(warn_code_fallback(version, bundled))
   tab

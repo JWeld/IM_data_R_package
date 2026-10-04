@@ -37,14 +37,16 @@ im_api_dataset <- function(version = NULL) {
   # only for IM_API_RETRY_AFTER seconds, because one im_read() asks several
   # times over and on a network that swallows packets each ask would otherwise
   # wait out the full timeout.
-  if (identical(the[[paste0(key, "_absent")]], TRUE)) return(NULL)
-  failed_at <- the[[paste0(key, "_failed_at")]]
+  absent_key <- paste0(key, "_absent")
+  failed_key <- paste0(key, "_failed_at")
+  if (isTRUE(the[[absent_key]])) return(NULL)
+  failed_at <- the[[failed_key]]
   if (!is.null(failed_at) &&
       difftime(Sys.time(), failed_at, units = "secs") < IM_API_RETRY_AFTER) {
     return(NULL)
   }
   failed <- function() {
-    the[[paste0(key, "_failed_at")]] <- Sys.time()
+    the[[failed_key]] <- Sys.time()
     NULL
   }
 
@@ -65,11 +67,12 @@ im_api_dataset <- function(version = NULL) {
   # so the status code alone does not tell you whether it is there. Only this
   # answer - the repository's own, parsed - is remembered as absence.
   if (is.null(js$dataset) || !length(js$dataset)) {
-    the[[paste0(key, "_absent")]] <- TRUE
+    the[[absent_key]] <- TRUE
     return(NULL)
   }
 
-  the[[paste0(key, "_failed_at")]] <- NULL
+  # Once the answer is held, the early return above means the failure
+  # timestamp is never consulted again, so there is nothing to clear.
   the[[key]] <- js$dataset
   js$dataset
 }

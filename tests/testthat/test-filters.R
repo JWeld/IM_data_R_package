@@ -95,10 +95,8 @@ with_empty_day <- function(env = parent.frame()) {
     length(f) <- length(hdr); f[is.na(f)] <- ""
     paste(ins(f), collapse = ",")
   }, character(1), USE.NAMES = FALSE)
-  path <- withr::local_tempfile(fileext = ".csv", .local_envir = env)
-  writeLines(c(paste(ins(hdr) |> replace(i + 1, "DAY"), collapse = ","), body),
-             path, useBytes = TRUE)
-  path
+  csv_file(c(paste(ins(hdr) |> replace(i + 1, "DAY"), collapse = ","), body),
+           env, useBytes = TRUE)
 }
 
 test_that("a column retained but empty throughout reads and widens", {

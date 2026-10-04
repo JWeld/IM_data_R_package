@@ -46,17 +46,16 @@ jobs:
         run: |
           Rscript -e '
             devtools::load_all(quiet = TRUE)
-            # Against the bundled release, not im_version(): the default is
-            # "latest", so im_check_version() compares the newest release
-            # with itself and never reports anything.
-            bundled <- IM_BUNDLED_VERSION
-            found   <- im_latest_version()
-            newer   <- !is.na(found) && version_newer(found, bundled)
-            latest  <- if (is.na(found)) "unknown" else found
-            cat(sprintf("current=%s\n", bundled), file = Sys.getenv("GITHUB_OUTPUT"), append = TRUE)
+            # Pinned to the bundled release: the default is "latest", under
+            # which im_check_version() would compare the newest release with
+            # itself. Pinned, "newer" means newer than the bundled code lists.
+            options(icpim.version = IM_BUNDLED_VERSION)
+            chk    <- im_check_version(quiet = TRUE)
+            latest <- if (is.na(chk$latest)) "unknown" else chk$latest
+            cat(sprintf("current=%s\n", chk$current), file = Sys.getenv("GITHUB_OUTPUT"), append = TRUE)
             cat(sprintf("latest=%s\n", latest), file = Sys.getenv("GITHUB_OUTPUT"), append = TRUE)
-            cat(sprintf("newer=%s\n", tolower(newer)), file = Sys.getenv("GITHUB_OUTPUT"), append = TRUE)
-            cat("bundled:", bundled, " latest:", latest, "\n")
+            cat(sprintf("newer=%s\n", tolower(chk$newer_available)), file = Sys.getenv("GITHUB_OUTPUT"), append = TRUE)
+            cat("bundled:", chk$current, " latest:", latest, "\n")
           '
 
       - name: Verify the package against the published data

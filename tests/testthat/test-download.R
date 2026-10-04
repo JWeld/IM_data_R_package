@@ -55,6 +55,15 @@ test_that("a file missing from a release that does exist says so", {
   expect_match(err, "renamed or withdrawn")
 })
 
+test_that("braces in a download error are text, not code", {
+  local_mocked_bindings(
+    curl_download = function(...) stop("schannel: failed {0x80090326}"),
+    has_internet = function(...) FALSE,
+    .package = "curl"
+  )
+  expect_match(fetch_and_catch("2"), "{0x80090326}", fixed = TRUE)
+})
+
 test_that("a genuine network failure still says so", {
   local_mocked_bindings(
     curl_download = function(...) stop("Could not resolve host"),
