@@ -113,6 +113,9 @@ jobs:
               '   subprogramme. A test asserts the constant agrees with the stamp the',
               '   script writes, so doing 2 without 3 fails rather than labelling the old',
               '   lists as the new release. Note the move in `NEWS.md`.',
+              '4. Move the version pinned by `options(icpim.version = ...)` in the',
+              '   examples and in `vignettes/icpim.Rmd` to the new release; a test',
+              '   checks they agree with `IM_BUNDLED_VERSION`.',
               '',
               'Row counts, file sizes and year ranges need no updating: `im_manifest()`',
               'and `im_coverage()` measure them at run time.'

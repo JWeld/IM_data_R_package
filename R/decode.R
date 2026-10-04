@@ -36,8 +36,12 @@
 #'   `stat` and `quality`.
 #' @export
 #' @examples
+#' # Pinned to the bundled release so this runs offline; the default, "latest",
+#' # asks the repository which release is newest.
+#' op <- options(icpim.version = "2")
 #' raw <- im_read_file(im_example("sample_PC.csv"))
 #' im_decode(raw)
+#' options(op)
 im_decode <- function(x, quiet = TRUE, version = im_version()) {
   stopifnot(is.data.frame(x))
 
@@ -150,8 +154,12 @@ report_unmatched <- function(codes, decoded, what) {
 #' @return A tibble.
 #' @export
 #' @examples
+#' # Pinned to the bundled release so this runs offline; the default, "latest",
+#' # asks the repository which release is newest.
+#' op <- options(icpim.version = "2")
 #' im_codes("substance", "sodium")
 #' im_codes("flag")
+#' options(op)
 im_codes <- function(type = c("substance", "parameter", "determination",
                               "pretreatment", "flag"),
                      pattern = NULL,

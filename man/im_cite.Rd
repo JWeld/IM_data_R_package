@@ -28,5 +28,9 @@ and the deposit line says what is missing, rather than pointing at the wrong
 release.
 }
 \examples{
+# Pinned to the bundled release so this runs offline; the default, "latest",
+# asks the repository which release is newest.
+op <- options(icpim.version = "2")
 im_cite()
+options(op)
 }

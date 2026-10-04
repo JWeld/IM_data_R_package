@@ -28,6 +28,10 @@ directly as \link{im_substances}, \link{im_parameters}, \link{im_determinations}
 \link{im_pretreatments} and \link{im_flags}.
 }
 \examples{
+# Pinned to the bundled release so this runs offline; the default, "latest",
+# asks the repository which release is newest.
+op <- options(icpim.version = "2")
 im_codes("substance", "sodium")
 im_codes("flag")
+options(op)
 }

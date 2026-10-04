@@ -70,9 +70,13 @@ IM_FILE_BASE <- "https://doris.snd.se/api/file"
 #'   (`im_dataset_info()`).
 #' @export
 #' @examples
+#' # Pinned to the bundled release so this runs offline; the default, "latest",
+#' # asks the repository which release is newest.
+#' op <- options(icpim.version = "2")
 #' im_doi()
 #' im_doi(concept = TRUE)
 #' im_dataset_info()$title
+#' options(op)
 im_doi <- function(version = im_version(), concept = FALSE) {
   if (isTRUE(concept)) return(IM_DOI_CONCEPT)
   info <- im_dataset_info(version)
@@ -149,7 +153,11 @@ im_dataset_info <- function(version = im_version()) {
 #'   side effect of printing.
 #' @export
 #' @examples
+#' # Pinned to the bundled release so this runs offline; the default, "latest",
+#' # asks the repository which release is newest.
+#' op <- options(icpim.version = "2")
 #' im_cite()
+#' options(op)
 im_cite <- function(version = im_version()) {
   version <- resolve_version(version)
   info <- im_dataset_info(version)

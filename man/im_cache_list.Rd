@@ -26,5 +26,9 @@ not built against, the code lists fetched for it. Both are listed, so what
 \code{im_cache_list()} shows is what \code{im_cache_clear()} would remove.
 }
 \examples{
+# Pinned to the bundled release so this runs offline; the default, "latest",
+# asks the repository which release is newest.
+op <- options(icpim.version = "2")
 im_cache_list()
+options(op)
 }

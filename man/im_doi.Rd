@@ -35,7 +35,11 @@ always resolves to the newest release. Cite the version you actually
 analysed, not the concept DOI.
 }
 \examples{
+# Pinned to the bundled release so this runs offline; the default, "latest",
+# asks the repository which release is newest.
+op <- options(icpim.version = "2")
 im_doi()
 im_doi(concept = TRUE)
 im_dataset_info()$title
+options(op)
 }

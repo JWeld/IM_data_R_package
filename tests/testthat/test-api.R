@@ -181,6 +181,29 @@ test_that("the bundled lookups are stamped with the release they came from", {
   expect_false(is.null(attr(im_subprogrammes, "built")))
 })
 
+test_that("the examples and the vignette pin the bundled release", {
+  # Resolving "latest" asks the repository, so the examples and vignette that
+  # decode or cite pin a version to stay offline. The pin has to be the
+  # bundled release: any other version would fetch its code lists instead,
+  # which is the network round trip the pin exists to avoid. So when
+  # IM_BUNDLED_VERSION moves, every pin moves with it, and this says where.
+  man <- test_path("..", "..", "man")
+  db <- if (dir.exists(man)) tools::Rd_db(dir = test_path("..", "..")) else tools::Rd_db("icpim")
+  examples <- vapply(db, function(rd) {
+    paste(utils::capture.output(tools::Rd2ex(rd)), collapse = "\n")
+  }, character(1))
+  vignette <- c(test_path("..", "..", "vignettes", "icpim.Rmd"),
+                system.file("doc", "icpim.Rmd", package = "icpim"))
+  vignette <- vignette[nzchar(vignette) & file.exists(vignette)][1]
+  text <- c(examples, if (!is.na(vignette)) readLines(vignette, encoding = "UTF-8"))
+
+  pins <- regmatches(text, gregexpr('icpim\\.version = "[^"]+"', text))
+  pins <- sub('.*"([^"]+)"', "\\1", unlist(pins))
+  expect_gt(length(pins), 0L)
+  expect_true(all(pins == IM_BUNDLED_VERSION),
+              info = paste("pinned:", paste(unique(pins), collapse = ", ")))
+})
+
 test_that("the bundled version needs no fetch and gives no warning", {
   expect_no_warning(codes_for("substances", IM_BUNDLED_VERSION))
   expect_identical(codes_for("substances", IM_BUNDLED_VERSION), im_substances)

@@ -48,6 +48,10 @@ file, told apart only by \code{PARLIST}.
 }
 
 \examples{
+# Pinned to the bundled release so this runs offline; the default, "latest",
+# asks the repository which release is newest.
+op <- options(icpim.version = "2")
 raw <- im_read_file(im_example("sample_PC.csv"))
 im_decode(raw)
+options(op)
 }

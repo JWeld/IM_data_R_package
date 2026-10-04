@@ -27,6 +27,10 @@ environment variable \code{ICPIM_CACHE_DIR}. Using a project-local directory is
 a good way to make an analysis self-contained.
 }
 \examples{
+# Pinned to the bundled release so this runs offline; the default, "latest",
+# asks the repository which release is newest.
+op <- options(icpim.version = "2")
 # Where files would be stored (does not create anything):
 im_cache_dir(create = FALSE)
+options(op)
 }

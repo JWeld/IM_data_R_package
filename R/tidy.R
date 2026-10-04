@@ -25,8 +25,12 @@
 #' @return A wider tibble.
 #' @export
 #' @examples
+#' # Pinned to the bundled release so this runs offline; the default, "latest",
+#' # asks the repository which release is newest.
+#' op <- options(icpim.version = "2")
 #' pc <- im_read_file(im_example("sample_PC.csv")) |> im_decode()
 #' im_widen(pc)
+#' options(op)
 im_widen <- function(x,
                      names_from = NULL,
                      values_from = "VALUE",

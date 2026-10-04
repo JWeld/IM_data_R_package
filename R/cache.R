@@ -16,8 +16,12 @@
 #' @return The cache path, as a character vector of length one.
 #' @export
 #' @examples
+#' # Pinned to the bundled release so this runs offline; the default, "latest",
+#' # asks the repository which release is newest.
+#' op <- options(icpim.version = "2")
 #' # Where files would be stored (does not create anything):
 #' im_cache_dir(create = FALSE)
+#' options(op)
 im_cache_dir <- function(version = im_version(), create = FALSE) {
   version <- resolve_version(version)
   path <- file.path(cache_root(), paste0("v", version))
@@ -49,7 +53,11 @@ cache_root <- function() {
 #'   cached. `im_cache_clear()` returns, invisibly, the paths it removed.
 #' @export
 #' @examples
+#' # Pinned to the bundled release so this runs offline; the default, "latest",
+#' # asks the repository which release is newest.
+#' op <- options(icpim.version = "2")
 #' im_cache_list()
+#' options(op)
 im_cache_list <- function(version = im_version()) {
   version <- resolve_version(version)
   dir <- im_cache_dir(version, create = FALSE)
