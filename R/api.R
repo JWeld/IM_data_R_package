@@ -107,7 +107,8 @@ im_handle <- function(timeout = NULL) {
 #' @param version Version to check, as a string.
 #'
 #' @return `im_latest_version()` returns a string, or `NA` if the repository
-#'   could not be reached. `im_version_exists()` returns a single logical.
+#'   could not be reached or did not answer with a release number.
+#'   `im_version_exists()` returns a single logical.
 #' @export
 #' @examples
 #' \donttest{
@@ -118,7 +119,16 @@ im_handle <- function(timeout = NULL) {
 im_latest_version <- function() {
   d <- im_api_dataset(NULL)
   if (is.null(d)) return(NA_character_)
-  chr1(d$versionNumber)
+  v <- chr1(d$versionNumber)
+  # It becomes a cache directory and part of every address, so only a release
+  # number is believed.
+  if (is_version_number(v)) v else NA_character_
+}
+
+# A release number as the repository writes them: "2", "2.1". The one check
+# between a version string and a file path or an address.
+is_version_number <- function(x) {
+  length(x) == 1L && !is.na(x) && grepl("^[0-9]+(\\.[0-9]+)*$", x)
 }
 
 #' @rdname im_latest_version
@@ -132,14 +142,26 @@ im_version_exists <- function(version) {
 # value, and it is resolved once per session: a session reads one release
 # throughout, even if the network comes and goes, and im_version() - the
 # default of nearly every `version` argument - does not go to the repository on
-# every call. Anything else is taken as written; the repository decides
-# whether it exists.
+# every call. Anything else must be a release number, and is otherwise taken
+# as written; the repository decides whether it exists.
 resolve_version <- function(version) {
   version <- tryCatch(as.character(version), error = function(e) character())
   version <- version[!is.na(version) & nzchar(version)]
   if (!length(version)) version <- IM_DEFAULT_VERSION
-  version <- version[[1]]
-  if (!identical(tolower(version), "latest")) return(version)
+  version <- trimws(version[[1]])
+  if (!identical(tolower(version), "latest")) {
+    # Anything else becomes a cache directory, an argument to
+    # im_cache_clear()'s unlink() and part of every address, so it must be a
+    # release number: "1/../../x" would otherwise reach outside the cache.
+    if (!is_version_number(version)) {
+      cli::cli_abort(c(
+        "{.val {version}} is not a dataset version.",
+        "i" = "Use a release number such as {.val {IM_BUNDLED_VERSION}}, or
+               {.val latest}."
+      ), call = NULL)
+    }
+    return(version)
+  }
   if (!is.null(the$resolved_latest)) return(the$resolved_latest)
 
   quiet  <- isTRUE(getOption("icpim.quiet", FALSE))

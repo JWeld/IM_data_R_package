@@ -46,7 +46,9 @@ im_widen <- function(x,
   id_cols <- setdiff(id_cols, c(names_from, values_from))
 
   keys <- x[, c(id_cols, names_from), drop = FALSE]
-  dup <- sum(duplicated(keys))
+  # vctrs rather than duplicated(): on a data frame duplicated() builds a list
+  # per row, and at 300,000 rows took longer than the pivot itself.
+  dup <- nrow(keys) - vctrs::vec_unique_count(keys)
   if (dup > 0 && is.null(values_fn)) {
     culprits <- varying_within_duplicates(x, keys, values_from)
     pct <- signif(100 * dup / nrow(x), 2)
@@ -79,10 +81,13 @@ im_widen <- function(x,
 # turns a blocking error into an actionable one. Computed only on the
 # duplicated rows, which are typically a fraction of a percent.
 varying_within_duplicates <- function(x, keys, values_from = "VALUE") {
-  dup <- duplicated(keys) | duplicated(keys, fromLast = TRUE)
+  id  <- vctrs::vec_group_id(keys)
+  dup <- id %in% id[duplicated(id)]
   if (!any(dup)) return(character())
   sub <- x[dup, , drop = FALSE]
-  g <- do.call(paste, c(as.list(keys[dup, , drop = FALSE]), sep = "\r"))
+  # Group ids, not keys pasted into strings, which would make NA and sodium's
+  # "NA" one group.
+  g <- id[dup]
   # Report the published column, not the decoded companion this package adds
   # alongside it, which would otherwise name every cause twice.
   decoded <- c("substance", "parameter", "determination", "pretreatment",

@@ -32,7 +32,9 @@ three things it does that \code{\link[=im_read]{im_read()}} cannot:
 \item \strong{Fetch everything at once.} \code{im_read()} takes one subprogramme;
 \code{im_download("all")} fetches all 21 (about 95 MB), which is how you
 prepare to work offline. Reading them all instead would load 1.2 million
-rows into memory only to discard them.
+rows into memory only to discard them. For a release other than the one
+bundled with the package, the code lists are fetched too, so decoding
+works offline as well.
 \item \strong{Replace a cached file.} \code{overwrite = TRUE} re-fetches one that is stale
 or damaged. \code{im_read()} will always prefer what is already cached.
 \item \strong{Give you the files, not the data.} It returns paths, so you can hand

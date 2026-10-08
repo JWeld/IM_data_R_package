@@ -41,6 +41,7 @@ Imports:
     tidyr,
     stats,
     tools,
+    vctrs,
     vroom (>= 1.6.0)
 Suggests:
     ggplot2,

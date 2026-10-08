@@ -86,3 +86,18 @@ test_that("detection-limit handling changes values the intended way", {
   nad <- im_detection_limit(pc, "na")
   expect_true(all(is.na(nad$VALUE[below])))
 })
+
+test_that("the duplicate report keeps sodium apart from a missing code", {
+  # Keys pasted into strings made sodium's "NA" and a missing code one group,
+  # so a column constant within each looked as if it varied.
+  x <- tibble::tibble(
+    AREA = "SE14", YYYYMM = "201501",
+    SUBST = c("NA", "NA", NA, NA), DETER = c("A", "A", "B", "B"), VALUE = 1:4
+  )
+  keys <- x[, c("AREA", "YYYYMM", "SUBST")]
+  expect_identical(varying_within_duplicates(x, keys), character())
+  x$DETER[2] <- "C"
+  expect_identical(varying_within_duplicates(x, keys), "DETER")
+  # And the count of duplicate keys is unchanged by the faster method.
+  expect_error(im_widen(x, id_cols = c("AREA", "YYYYMM")), "2 duplicate keys")
+})

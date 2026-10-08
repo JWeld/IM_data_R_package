@@ -104,8 +104,8 @@ unique(pc$substance[pc$SUBST == "NA"])
 ```
 
 The `repair` argument controls this. Its default, `"auto"`, applies the
-correction to version 1 and leaves later versions alone, so a script written
-today keeps working unchanged when you move to version 2. `repair = FALSE`
+correction to version 1 and leaves later versions alone, so one script reads
+version 1 and every later release correctly. `repair = FALSE`
 gives you the file exactly as published; `repair = TRUE` forces the
 correction.
 

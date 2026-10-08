@@ -114,3 +114,36 @@ test_that("an empty download is refused rather than cached", {
   err <- fetch_and_catch("1")
   expect_match(err, "empty file")
 })
+
+test_that("filling the cache for another release fetches its code lists too", {
+  # im_download("all") is how you prepare to work offline. For a release other
+  # than the bundled one, the code lists used to be fetched only on the first
+  # read - which, offline, decoded against the bundled release instead.
+  withr::local_options(icpim.cache_dir = withr::local_tempdir(), icpim.quiet = TRUE)
+  local_mocked_bindings(im_api_dataset = function(version = NULL) NULL)
+  local_mocked_bindings(
+    curl_download = function(url, destfile, ...) {
+      writeLines("AREA,SUBST,VALUE,YYYYMM\nEE01,CD,0.1,201501", destfile)
+      destfile
+    },
+    .package = "curl"
+  )
+  updated <- character()
+  local_mocked_bindings(im_update_codes = function(version, quiet = NULL) {
+    updated <<- c(updated, version)
+    invisible(NULL)
+  })
+
+  im_download("MC", version = "3")
+  expect_identical(updated, "3")
+  # Not for the bundled release, whose lists ship with the package.
+  im_download("MC", version = IM_BUNDLED_VERSION)
+  expect_identical(updated, "3")
+
+  # Not again once the cache holds every list, unless asked to refresh.
+  local_mocked_bindings(code_cache_complete = function(version) TRUE)
+  im_download("MC", version = "3")
+  expect_identical(updated, "3")
+  im_download("MC", version = "3", overwrite = TRUE)
+  expect_identical(updated, c("3", "3"))
+})

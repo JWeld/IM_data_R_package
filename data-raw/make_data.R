@@ -19,7 +19,7 @@
 # annual release needs no change to this script.
 
 library(tibble)
-pkgload::load_all(quiet = TRUE)   # for read_doc_csv() and IM_BUNDLED_VERSION
+pkgload::load_all(quiet = TRUE)   # for its readers, builders and IM_BUNDLED_VERSION
 
 # The repository's own file list says where each file is served from and what
 # its checksum is. Without it the build would fetch from a hand-built address,
@@ -42,69 +42,27 @@ read_doc <- function(f) {
   read_doc_csv(tmp)
 }
 
-# Rows with no code cannot be joined to anything, so they are discarded - but
-# not silently. A malformed future release would otherwise lose rows here with
-# nothing in the build log to show for it.
-drop_uncoded <- function(x, what) {
-  keep <- !is.na(x$code)
-  dropped <- sum(!keep)
-  message("  ", what, ": ", sum(keep), " kept, ", dropped, " dropped (no code)")
-  x[keep, , drop = FALSE]
+# The package's own table builder - the one im_update_codes() uses for a
+# release this package was not built against - so the bundled tables and the
+# fetched ones are made the same way and cannot drift apart.
+raw  <- lapply(IM_CODE_FILES, read_doc)
+tabs <- build_code_tables(raw)
+
+# Rows with no code cannot be joined to anything, and build_code_tables()
+# discards them - but not silently here. A malformed future release would
+# otherwise lose rows with nothing in the build log to show for it.
+for (nm in setdiff(names(tabs), "sites")) {
+  message("  ", nm, ": ", nrow(tabs[[nm]]), " kept, ",
+          nrow(raw[[nm]]) - nrow(tabs[[nm]]), " dropped (no code)")
 }
 
-# Substances --------------------------------------------------------------
-subs <- read_doc("substance_codes.csv")
-im_substances <- tibble(
-  code        = subs$SubstanceCode,
-  name        = subs$Name,
-  group       = suppressWarnings(as.integer(subs$Group)),
-  cas         = subs$CASnumber,
-  description = subs$Description
-)
-im_substances <- drop_uncoded(im_substances, "substances")
+im_substances     <- tabs$substances
+im_parameters     <- tabs$parameters
+im_determinations <- tabs$determinations
+im_pretreatments  <- tabs$pretreatments
+im_sites          <- tabs$sites
 stopifnot("NA" %in% im_substances$code)  # sodium survived
 stopifnot(im_substances$name[im_substances$code == "NA"] == "Sodium")
-
-# Parameters by subprogramme ----------------------------------------------
-par <- read_doc("parameters_and_codes_by_subprogramme.csv")
-im_parameters <- tibble(
-  subprog      = par$Subprogramme,
-  subprog_name = par$SubprogName,
-  code         = par$Parameter,
-  name         = par$ParamName,
-  list         = par$ParamList,
-  unit         = par$Unit,
-  minimum      = suppressWarnings(as.numeric(par$Minimum)),
-  maximum      = suppressWarnings(as.numeric(par$Maximum))
-)
-im_parameters <- drop_uncoded(im_parameters, "parameters")
-
-# Determination and pretreatment methods -----------------------------------
-det <- read_doc("determination_codes.csv")
-im_determinations <- tibble(
-  code = det$DeterminationCode,
-  name = det$Description,
-  note = det$NOTE
-)
-im_determinations <- drop_uncoded(im_determinations, "determinations")
-
-pre <- read_doc("pretreatment_codes.csv")
-im_pretreatments <- tibble(
-  code = pre$PretreatmentCode,
-  name = pre$Description
-)
-im_pretreatments <- drop_uncoded(im_pretreatments, "pretreatments")
-
-# Sites -------------------------------------------------------------------
-sit <- read_doc("IM_sites_info.csv")
-im_sites <- tibble(
-  area      = sit$Acode,
-  country   = sit$CountryCod,
-  name      = sit$Name,
-  latitude  = as.numeric(sit$Latitude),
-  longitude = as.numeric(sit$Longitude),
-  active    = as.integer(sit$Active) == 1L
-)
 
 # Flags -------------------------------------------------------------------
 # From the ICP IM Manual edition 8, section 4.3.2, plus the AM-specific table

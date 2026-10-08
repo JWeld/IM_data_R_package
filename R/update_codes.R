@@ -28,6 +28,9 @@ read_doc_csv <- function(path) {
     delim = ",",
     col_types = vroom::cols(.default = vroom::col_character()),
     na = character(),
+    # Read in full: the file is a temporary one, removed straight after, and
+    # on Windows a lazily read file stays mapped and cannot be removed.
+    altrep = FALSE,
     show_col_types = FALSE,
     progress = FALSE
   )
@@ -203,6 +206,13 @@ code_cache_path <- function(version) {
   file.path(im_cache_dir(version, create = FALSE), "_code_lists.rds")
 }
 
+# Does the cache hold a usable copy of every code list for this version?
+code_cache_complete <- function(version) {
+  tabs <- read_code_cache(version)
+  all(vapply(names(IM_CODE_FILES), function(nm) valid_code_table(tabs[[nm]], nm),
+             logical(1)))
+}
+
 # The lookup table to use for a given version: cached published lists if we
 # have them, otherwise the bundled ones.
 codes_for <- function(which, version = im_version()) {
@@ -255,7 +265,7 @@ warn_code_fallback <- function(version, bundled) {
       "i" = "If you maintain this package, this also means the bundled lookups
              are older than the default version: rerun
              {.file data-raw/make_data.R}."
-    ))
+    ), class = "icpim_code_fallback")
   }
   bundled
 }

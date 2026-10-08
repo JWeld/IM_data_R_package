@@ -106,12 +106,36 @@ test_that("an empty or missing version setting means the default", {
   expect_equal(resolve_version(NA), "7")
 })
 
+test_that("a version must be a release number before it reaches a path or address", {
+  # It becomes a cache directory and part of every address; "1/../../x" once
+  # reached outside the cache, where im_cache_clear() would unlink files.
+  withr::local_options(icpim.cache_dir = withr::local_tempdir())
+  for (bad in c("1/../../x", "../2", "2?x=1", "v2", "two")) {
+    expect_error(resolve_version(bad), "not a dataset version", info = bad)
+  }
+  expect_error(im_cache_dir("1/../.."), "not a dataset version")
+  expect_error(im_cache_clear("1/../..", confirm = FALSE), "not a dataset version")
+  expect_equal(resolve_version(" 2 "), "2")
+  expect_equal(resolve_version("2.1"), "2.1")
+})
+
+test_that("the repository's newest version is believed only if it is a release number", {
+  local_mocked_bindings(im_api_dataset = function(version = NULL) list(versionNumber = "../9"))
+  expect_identical(im_latest_version(), NA_character_)
+  local_mocked_bindings(im_api_dataset = function(version = NULL) list(versionNumber = "3"))
+  expect_identical(im_latest_version(), "3")
+})
+
 test_that("im_check_version tells a session that started offline about the newer release", {
   local_latest()
   local_mocked_bindings(im_latest_version = function() NA_character_)
   expect_equal(im_version(), IM_BUNDLED_VERSION)
   local_mocked_bindings(im_latest_version = function() "9")
-  expect_message(chk <- im_check_version(), "settled on")
+  # Two messages, both captured: expect_message() takes the first and lets
+  # the second through to the test output.
+  msgs <- capture_messages(chk <- im_check_version())
+  expect_match(msgs, "settled on", all = FALSE)
+  expect_match(msgs, "Restart R", all = FALSE)
   expect_true(chk$newer_available)
   expect_equal(chk$current, IM_BUNDLED_VERSION)
 })
@@ -287,7 +311,7 @@ test_that("im_check_version handles version strings as.numeric cannot", {
   local_mocked_bindings(im_latest_version = function() "2.0.1")
   res <- im_check_version(quiet = TRUE)
   expect_true(res$newer_available)
-  expect_message(im_check_version(quiet = FALSE), "2.0.1")
+  expect_match(capture_messages(im_check_version(quiet = FALSE)), "2.0.1")
 
   # Unparseable strings compare FALSE rather than NA.
   local_mocked_bindings(im_latest_version = function() "not-a-version")

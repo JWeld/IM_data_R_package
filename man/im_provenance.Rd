@@ -11,8 +11,10 @@ im_provenance(x)
 }
 \value{
 An \code{icpim_provenance} object: a list with \code{subprog}, \code{file},
-\code{dataset_version}, \code{doi}, \code{downloaded}, \code{read_at}, \code{package_version} and
-\code{rows_read}. Returns \code{NULL}, with a warning, if \code{x} carries no record.
+\code{dataset_version}, \code{doi}, \code{downloaded}, \code{read_at}, \code{package_version},
+\code{rows_read} and \code{sodium_corrected}, the number of returned rows whose
+blank code was coded as sodium. Returns \code{NULL}, with a warning, if \code{x}
+carries no record.
 }
 \description{
 Reports the dataset version, DOI and file behind an object returned by

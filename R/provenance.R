@@ -45,8 +45,10 @@ copy_provenance <- function(new, old) {
 #' @param x An object from [im_read()].
 #'
 #' @return An `icpim_provenance` object: a list with `subprog`, `file`,
-#'   `dataset_version`, `doi`, `downloaded`, `read_at`, `package_version` and
-#'   `rows_read`. Returns `NULL`, with a warning, if `x` carries no record.
+#'   `dataset_version`, `doi`, `downloaded`, `read_at`, `package_version`,
+#'   `rows_read` and `sodium_corrected`, the number of returned rows whose
+#'   blank code was coded as sodium. Returns `NULL`, with a warning, if `x`
+#'   carries no record.
 #' @export
 #' @examples
 #' pc <- im_read_file(im_example("sample_PC.csv"))

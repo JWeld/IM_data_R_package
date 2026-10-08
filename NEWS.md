@@ -293,6 +293,47 @@ network examples are wrapped in `try()` and the live tests are skipped under
   network once the bundle moved to version 2, and passed because the package
   falls back quietly when the repository cannot answer.
 
+## Found in a review of the whole package
+
+* **`im_read_file()` says when it codes blank codes as sodium.** A path
+  carries no release, so a blank code in a release after version 1 was coded
+  as sodium too, and in silence: `quiet` defaulted to `TRUE`, and the note was
+  spent once a session. Each read that changes rows now says how many, in
+  which column, and that this is right for version 1 only. `quiet` defaults to
+  the `icpim.quiet` option, as it does elsewhere. `im_read()`, which repairs
+  only version 1, keeps its once-a-session note.
+* The warning for blank codes in a release that should not have them has
+  class `icpim_blank_codes`, and the one for decoding with another release's
+  code lists `icpim_code_fallback`.
+* **`data-raw/verify_release.R` fails on any warning** raised while reading the
+  published data, not only on numeric coercion. A version 2 file planted with
+  version 1's blank sodium codes printed the warning and passed; it now fails.
+  It also fails if the file list cannot be read, or if a code has two names
+  within the parameter list, which decoding assumes never happens. The
+  `blank_subst` column, which counts sodium as well, is now `sodium_or_blank`.
+* `im_download()` fetches the code lists as well as the data for a release
+  other than the bundled one, so a cache filled for working offline decodes
+  against the right release.
+* `dataset-watch` passes step outputs to its script through the environment.
+  The newest version comes from the repository's API, and spliced into the
+  script it would have run as code with permission to write issues. Only a
+  release number is passed on.
+* A dataset version must be a release number such as `"2"`, or `"latest"`. It
+  becomes a cache directory, and `"1/../.."` reached outside the cache, where
+  `im_cache_clear()` would have removed files. `im_latest_version()` returns
+  `NA` for an answer that is not a release number.
+* `im_widen()` checks for duplicate keys with vctrs. `duplicated()` on a data
+  frame took longer than the pivot itself, 1.5 seconds at 300,000 rows. The
+  report of what varies within duplicates no longer treats sodium's `"NA"` and
+  a missing code as one group.
+* Files are read in full rather than lazily. Every column is rewritten
+  straight after reading, so lazy reading saved nothing, and on Windows it
+  kept the cached file mapped, and locked against replacement or removal.
+* `data-raw/make_data.R` builds the bundled tables with `build_code_tables()`,
+  the function used for a release fetched at run time, rather than a copy of
+  its own. Rebuilt from version 2, every table is identical to the one
+  shipped.
+
 ## Data
 
 * `im_subprogrammes`, `im_sites`, `im_substances`, `im_parameters`,

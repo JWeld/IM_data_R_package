@@ -61,9 +61,20 @@ test_that("blank codes in an unaffected version are reported, not assumed", {
   # bundled ones are being used. The fetch is mocked to fail rather than left
   # to the network, so the test means the same online and offline.
   local_mocked_bindings(im_update_codes = function(...) invisible(NULL))
-  warns <- capture_warnings(out <- im_read("PC", quiet = TRUE))
-  expect_match(warns, "blank substance code", all = FALSE)
-  expect_match(warns, "code lists published for", all = FALSE)
+  warns <- list()
+  out <- withCallingHandlers(
+    im_read("PC", quiet = TRUE),
+    warning = function(w) {
+      warns[[length(warns) + 1L]] <<- w
+      invokeRestart("muffleWarning")
+    }
+  )
+  msgs <- vapply(warns, conditionMessage, character(1))
+  expect_match(msgs, "blank substance code", all = FALSE)
+  expect_match(msgs, "code lists published for", all = FALSE)
+  # Classed, so a script can act on them: data-raw/verify_release.R does.
+  expect_true(any(vapply(warns, inherits, logical(1), "icpim_blank_codes")))
+  expect_true(any(vapply(warns, inherits, logical(1), "icpim_code_fallback")))
 
   # Left missing rather than silently called sodium.
   expect_equal(sum(is.na(out$SUBST)), 60)
@@ -93,6 +104,41 @@ test_that("repair = FALSE returns the file as published", {
   pc <- im_read_file(im_example("sample_PC.csv"), repair = FALSE)
   expect_equal(sum(is.na(pc$SUBST)), 60)
   expect_false(any(pc$SUBST == "NA", na.rm = TRUE))
+})
+
+test_that("a direct read says what it coded as sodium, every time", {
+  # A path carries no release, so a blank code in a later release would be
+  # coded as sodium too. That used to happen in silence: im_read_file()
+  # defaulted to quiet, and the note was spent once a session.
+  withr::local_options(icpim.quiet = FALSE)
+  withr::defer(reset_session_state())
+  reset_session_state()
+  pc <- im_example("sample_PC.csv")
+  expect_message(im_read_file(pc), "Coded 60 blank SUBST codes")
+  expect_message(im_read_file(pc), "version 1 only")
+  # It names the column it changed.
+  expect_message(im_read_file(im_example("sample_BI.csv")), "blank PARAM codes")
+
+  # Asked for quiet, or nothing changed, it says nothing.
+  expect_no_message(im_read_file(pc, quiet = TRUE))
+  expect_no_message(im_read_file(pc, repair = FALSE))
+  expect_no_message(im_read_file(corrected_pc_file()))
+  withr::local_options(icpim.quiet = TRUE)
+  expect_no_message(im_read_file(pc))
+})
+
+test_that("im_read() keeps the once-a-session note for the release it repairs", {
+  # It repairs only version 1, where the blank codes are known to be sodium.
+  cache <- withr::local_tempdir()
+  withr::local_options(icpim.cache_dir = cache, icpim.quiet = FALSE)
+  withr::defer(reset_session_state())
+  reset_session_state()
+  local_mocked_bindings(im_api_dataset = function(version = NULL) NULL)
+  dir.create(file.path(cache, "v1"))
+  file.copy(im_example("sample_PC.csv"),
+            file.path(cache, "v1", "PC_precipitation_chemistry.csv"))
+  expect_message(im_read("PC", version = "1", decode = FALSE), "Restored the sodium code")
+  expect_no_message(im_read("PC", version = "1", decode = FALSE))
 })
 
 test_that("empty cells become NA but codes do not", {

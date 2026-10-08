@@ -50,7 +50,11 @@ jobs:
             # "latest", so im_check_version() compares the newest release
             # with itself and never reports anything.
             bundled <- IM_BUNDLED_VERSION
+            # The answer comes from outside this repository and is written
+            # to GITHUB_OUTPUT, where a newline would add outputs of its own.
+            # Only a release number is passed on.
             found   <- im_latest_version()
+            if (!is.na(found) && !grepl("^[0-9]+([.][0-9]+)*$", found)) found <- NA
             newer   <- !is.na(found) && version_newer(found, bundled)
             latest  <- if (is.na(found)) "unknown" else found
             cat(sprintf("current=%s\n", bundled), file = Sys.getenv("GITHUB_OUTPUT"), append = TRUE)
@@ -76,16 +80,24 @@ jobs:
       - name: Open or update an issue when something needs attention
         if: steps.check.outputs.newer == 'true' || steps.verify.outcome == 'failure'
         uses: actions/github-script@v7
+        # Through the environment, not as expressions in the script: `latest`
+        # comes from the repository's API, and text spliced into the script
+        # would run as code with permission to write issues.
+        env:
+          NEWER: ${{ steps.check.outputs.newer }}
+          FAILED: ${{ steps.verify.outcome }}
+          LATEST: ${{ steps.check.outputs.latest }}
+          CURRENT: ${{ steps.check.outputs.current }}
         with:
           script: |
             const fs = require('fs');
             const log = fs.existsSync('verify.log')
               ? fs.readFileSync('verify.log', 'utf8').slice(-8000)
               : '(no output)';
-            const newer = '${{ steps.check.outputs.newer }}' === 'true';
-            const failed = '${{ steps.verify.outcome }}' === 'failure';
-            const latest = '${{ steps.check.outputs.latest }}';
-            const current = '${{ steps.check.outputs.current }}';
+            const newer = process.env.NEWER === 'true';
+            const failed = process.env.FAILED === 'failure';
+            const latest = process.env.LATEST;
+            const current = process.env.CURRENT;
 
             const title = newer
               ? `ICP IM dataset version ${latest} published`

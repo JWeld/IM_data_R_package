@@ -31,6 +31,19 @@ SCODE_WIDTH <- 4L
 problems <- character()
 note <- function(...) problems <<- c(problems, paste0(...))
 
+# Any warning raised while reading the published data is a problem here, not
+# only the numeric-coercion one. A blank code in a release that should not
+# have one (icpim_blank_codes), decoding against another release's code lists
+# (icpim_code_fallback) and an unreadable file list all warn and carry on, and
+# a run that printed them and exited 0 would have reported a regression of the
+# version 1 sodium issue as a pass.
+noting_warnings <- function(where, expr) {
+  withCallingHandlers(expr, warning = function(w) {
+    note(where, ": ", gsub("\\s+", " ", cli::ansi_strip(conditionMessage(w))))
+    invokeRestart("muffleWarning")
+  })
+}
+
 cat("Checking ICP IM dataset version ", version, "\n\n", sep = "")
 
 # --- Is this still the newest release? ------------------------------------
@@ -43,7 +56,7 @@ if (is.na(chk$latest)) {
 }
 
 # --- Does the file list match what the package expects? -------------------
-man <- im_manifest(version, "data")
+man <- noting_warnings("file list", im_manifest(version, "data"))
 bundled <- im_subprogrammes
 
 added   <- setdiff(man$subprog, bundled$subprog)
@@ -69,15 +82,10 @@ for (sp in man$subprog) {
   # A published value that is not a number in a column typed as numeric is
   # exactly the drift this script exists to catch: it means the column is not
   # what the package believes it to be (NEEDLES, once), and the read itself
-  # only warns.
+  # only warns. So do blank codes and a fallback to another release's code
+  # lists; noting_warnings() turns each into a problem.
   x <- tryCatch(
-    withCallingHandlers(
-      im_read(sp, version = version),
-      icpim_numeric_loss = function(w) {
-        note(sp, ": ", gsub("\\s+", " ", cli::ansi_strip(conditionMessage(w))))
-        invokeRestart("muffleWarning")
-      }
-    ),
+    noting_warnings(sp, im_read(sp, version = version)),
     error = function(e) e
   )
   if (inherits(x, "error")) {
@@ -126,11 +134,26 @@ for (sp in man$subprog) {
     rows    = nrow(x),
     sites   = length(unique(x$AREA)),
     years   = paste0(min(x$year, na.rm = TRUE), "-", max(x$year, na.rm = TRUE)),
-    blank_subst = if (key == "SUBST") {
+    # Sodium's code and missing codes together: a release in which sodium
+    # lost its code again shows here as a fall in sodium and a rise in NA.
+    sodium_or_blank = if (key == "SUBST") {
       sum(is.na(x$SUBST)) + sum(x$SUBST == "NA", na.rm = TRUE)
     } else NA_integer_,
     widen = wid
   )
+}
+
+# --- Do the code lists still support decoding? ---------------------------
+# Decoding flattens the parameter list across subprogrammes, which is safe
+# only while no code means two different things within it (see decode_codes()
+# in R/decode.R). A release that broke that would decode some rows to the
+# wrong name without any other sign.
+par <- noting_warnings("code lists", codes_for("parameters", version))
+names_per_code <- tapply(par$name, par$code, function(n) length(unique(n[!is.na(n)])))
+clash <- names(names_per_code)[names_per_code > 1L]
+if (length(clash)) {
+  note("parameter code(s) with more than one name in the parameter list: ",
+       paste(head(clash, 10), collapse = ","), " - decode_codes() assumes none")
 }
 
 out <- do.call(rbind, res)

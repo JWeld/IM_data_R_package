@@ -10,7 +10,9 @@
 #' * **Fetch everything at once.** `im_read()` takes one subprogramme;
 #'   `im_download("all")` fetches all 21 (about 95 MB), which is how you
 #'   prepare to work offline. Reading them all instead would load 1.2 million
-#'   rows into memory only to discard them.
+#'   rows into memory only to discard them. For a release other than the one
+#'   bundled with the package, the code lists are fetched too, so decoding
+#'   works offline as well.
 #' * **Replace a cached file.** `overwrite = TRUE` re-fetches one that is stale
 #'   or damaged. `im_read()` will always prefer what is already cached.
 #' * **Give you the files, not the data.** It returns paths, so you can hand
@@ -84,6 +86,15 @@ im_download <- function(subprog, overwrite = FALSE, quiet = NULL,
     fetch_file(src$url, dest, quiet = quiet, version = version, sha256 = src$sha256)
     dest
   }, character(1))
+
+  # Reading offline needs the code lists as well as the data. For a release
+  # other than the bundled one they are fetched on the first read, which
+  # offline falls back to the bundled lists - so a cache filled here for
+  # working offline would have decoded against the wrong release.
+  if (!identical(version, IM_BUNDLED_VERSION) &&
+      (overwrite || !code_cache_complete(version))) {
+    im_update_codes(version, quiet = quiet)
+  }
 
   if (!quiet) {
     cli::cli_alert_success("Cached {length(paths)} file{?s} in {.path {dir}}")

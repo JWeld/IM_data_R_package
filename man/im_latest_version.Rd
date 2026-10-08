@@ -14,7 +14,8 @@ im_version_exists(version)
 }
 \value{
 \code{im_latest_version()} returns a string, or \code{NA} if the repository
-could not be reached. \code{im_version_exists()} returns a single logical.
+could not be reached or did not answer with a release number.
+\code{im_version_exists()} returns a single logical.
 }
 \description{
 \code{im_latest_version()} asks the repository what the newest published version

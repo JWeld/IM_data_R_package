@@ -2,7 +2,11 @@
 # The suite runs against the bundled release instead, so a default `version`
 # argument never goes to the network. Tests of the "latest" default set the
 # option themselves and mock the repository.
-withr::local_options(icpim.version = IM_BUNDLED_VERSION,
+#
+# Quiet by default too: the bundled extracts are version 1 files, and every
+# direct read of one says how many blank codes it coded as sodium. Tests of a
+# message set icpim.quiet = FALSE, or pass quiet = FALSE, themselves.
+withr::local_options(icpim.version = IM_BUNDLED_VERSION, icpim.quiet = TRUE,
                      .local_envir = teardown_env())
 
 # Under R CMD check - NOT_CRAN unset, as on CRAN and in the R-CMD-check

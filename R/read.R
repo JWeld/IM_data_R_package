@@ -132,7 +132,9 @@ im_read <- function(subprog,
   path  <- im_local_path(code, version = version, quiet = quiet)
 
   repair_now <- resolve_repair(repair, version)
-  out <- im_read_file(path, repair = repair_now, quiet = quiet)
+  # Knowing the release, this repairs only where the code is known to be
+  # sodium, so the note it gives is the once-per-session one.
+  out <- read_published(path, repair = repair_now, quiet = quiet, note_once = TRUE)
 
   # If a release this package does not expect to be affected turns out to have
   # blank substance codes, say so rather than silently dropping them: it means
@@ -146,7 +148,7 @@ im_read <- function(subprog,
       "i" = "In version 1 these were sodium. Do not assume that here.",
       "i" = "Use {.code repair = TRUE} to code them as sodium anyway, or
              {.code repair = FALSE} to keep them missing and silence this."
-    ))
+    ), class = "icpim_blank_codes")
   }
   attr(out, "icpim_blank_subst") <- NULL
 
@@ -240,26 +242,45 @@ im_read <- function(subprog,
 #' want readable names.
 #'
 #' @param path Path to a published ICP IM CSV file.
-#' @param repair Logical. Correct the blank sodium substance code, a known
-#'   issue in version 1 of the deposit? Files from version 2 onwards have the
-#'   code already and pass through unchanged either way. The version-aware
-#'   `"auto"` setting belongs to [im_read()], which knows which release it is
-#'   reading; here the choice is explicit.
-#' @param quiet Logical. Suppress the note about corrected rows.
+#' @param repair Logical. Code a blank substance or parameter code as sodium,
+#'   the known issue in version 1 of the deposit? Files from version 2 onwards
+#'   carry the code already and pass through unchanged either way. A path says
+#'   nothing about which release a file came from, so a blank code found in a
+#'   later release would be coded as sodium too; each read that changes rows
+#'   therefore says how many, unless `quiet`. The version-aware `"auto"`
+#'   setting belongs to [im_read()], which knows which release it is reading.
+#' @param quiet Logical. Suppress the note saying how many blank codes were
+#'   coded as sodium. Defaults to the `icpim.quiet` option.
 #'
 #' @return A tibble, with `date`, `year` and `month` added. Carries an
 #'   `icpim_blank_subst` attribute recording how many rows had a blank
 #'   substance code before any correction.
 #' @export
 #' @examples
+#' # A version 1 extract, so its blank codes really are sodium.
 #' pc <- im_read_file(im_example("sample_PC.csv"))
 #' str(pc[, c("AREA", "SCODE", "SUBST", "VALUE", "date")])
-im_read_file <- function(path, repair = TRUE, quiet = TRUE) {
+im_read_file <- function(path, repair = TRUE, quiet = NULL) {
+  quiet <- quiet %||% getOption("icpim.quiet", FALSE)
+  read_published(path, repair = repair, quiet = quiet, note_once = FALSE)
+}
+
+# The body of im_read_file(), shared with im_read(). They differ only in how
+# they report coding blank codes as sodium. im_read() repairs only a release
+# known to need it, so once a session is enough. A bare path carries no
+# release, so a direct read says so every time it changes rows: once a
+# session, a blank code in a later release, read after a version 1 file, was
+# coded as sodium in silence.
+read_published <- function(path, repair, quiet, note_once) {
   raw <- vroom::vroom(
     path,
     delim = ",",
     col_types = vroom::cols(.default = vroom::col_character()),
     na = character(),          # nothing is missing at read time; see below
+    # Every column is rewritten below, so reading lazily saves nothing, and on
+    # Windows it keeps the cached file mapped - and locked against being
+    # replaced or removed - until the garbage collector releases it.
+    altrep = FALSE,
     progress = FALSE,
     show_col_types = FALSE
   )
@@ -274,22 +295,35 @@ im_read_file <- function(path, repair = TRUE, quiet = TRUE) {
   # where the determinand column is PARAM: three rows of BI carry the blank in
   # version 1, and they belong to the same issue.
   blank_rows <- integer(0)
+  blank_cols <- character(0)
   for (col in intersect(c("SUBST", "PARAM"), names(raw))) {
     blank <- !is.na(raw[[col]]) & !nzchar(trimws(raw[[col]]))
     if (!any(blank)) next
     blank_rows <- union(blank_rows, which(blank))
+    blank_cols <- c(blank_cols, col)
     if (isTRUE(repair)) raw[[col]][blank] <- "NA"
   }
   # Rows, not cells: a row blank in both SUBST and PARAM is one repaired row,
   # so every count reported here agrees with sodium_corrected.
   n_blank <- length(blank_rows)
-  if (isTRUE(repair) && n_blank > 0 && !quiet && !isTRUE(the$warned_sodium)) {
-    the$warned_sodium <- TRUE
-    cli::cli_alert_info(c(
-      "Restored the sodium code in {n_blank} row{?s} ",
-      "(blank in version 1; the code is the string {.val NA}). ",
-      "Use {.code repair = FALSE} for the file exactly as published."
-    ))
+  if (isTRUE(repair) && n_blank > 0 && !quiet) {
+    if (!note_once) {
+      cli::cli_alert_info(c(
+        "Coded {n_blank} blank {.field {blank_cols}} {cli::qty(n_blank)}code{?s} in ",
+        "{.file {basename(path)}} as sodium ({.val NA}). ",
+        "That is right for a file from version 1 only; ",
+        "in a later release a blank code is not known to be sodium. Read such ",
+        "a file with {.code repair = FALSE}, or with {.fn im_read}, which knows ",
+        "the release."
+      ))
+    } else if (!isTRUE(the$warned_sodium)) {
+      the$warned_sodium <- TRUE
+      cli::cli_alert_info(c(
+        "Restored the sodium code in {n_blank} row{?s} ",
+        "(blank in version 1; the code is the string {.val NA}). ",
+        "Use {.code repair = FALSE} for the file exactly as published."
+      ))
+    }
   }
 
   # Now apply the one NA rule the dataset README states: an empty cell means

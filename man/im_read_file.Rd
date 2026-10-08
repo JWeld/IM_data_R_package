@@ -4,18 +4,21 @@
 \alias{im_read_file}
 \title{Read one published CSV file from disk}
 \usage{
-im_read_file(path, repair = TRUE, quiet = TRUE)
+im_read_file(path, repair = TRUE, quiet = NULL)
 }
 \arguments{
 \item{path}{Path to a published ICP IM CSV file.}
 
-\item{repair}{Logical. Correct the blank sodium substance code, a known
-issue in version 1 of the deposit? Files from version 2 onwards have the
-code already and pass through unchanged either way. The version-aware
-\code{"auto"} setting belongs to \code{\link[=im_read]{im_read()}}, which knows which release it is
-reading; here the choice is explicit.}
+\item{repair}{Logical. Code a blank substance or parameter code as sodium,
+the known issue in version 1 of the deposit? Files from version 2 onwards
+carry the code already and pass through unchanged either way. A path says
+nothing about which release a file came from, so a blank code found in a
+later release would be coded as sodium too; each read that changes rows
+therefore says how many, unless \code{quiet}. The version-aware \code{"auto"}
+setting belongs to \code{\link[=im_read]{im_read()}}, which knows which release it is reading.}
 
-\item{quiet}{Logical. Suppress the note about corrected rows.}
+\item{quiet}{Logical. Suppress the note saying how many blank codes were
+coded as sodium. Defaults to the \code{icpim.quiet} option.}
 }
 \value{
 A tibble, with \code{date}, \code{year} and \code{month} added. Carries an
@@ -32,6 +35,7 @@ It does not decode the code lists; pass the result to \code{\link[=im_decode]{im
 want readable names.
 }
 \examples{
+# A version 1 extract, so its blank codes really are sodium.
 pc <- im_read_file(im_example("sample_PC.csv"))
 str(pc[, c("AREA", "SCODE", "SUBST", "VALUE", "date")])
 }
