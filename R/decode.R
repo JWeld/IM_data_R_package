@@ -19,10 +19,18 @@
 #' codes - `AOT40`, `SOL_G`, `CEC_E`, `C/N`, `BDEN` - and looking those up in
 #' the substance list alone returns nothing.
 #'
-#' It also matters where the lists overlap. 77 codes appear in both, and `ABS`
-#' means *Absorbance* in one and *Number of branches on the current tree where
-#' algae are missing* in the other. Both readings occur in `AL`, in the same
-#' file, told apart only by `PARLIST`.
+#' The lists overlap in 77 codes, but in 76 of them the parameter list
+#' repeats a substance, tagged `"DB"`, with the same meaning. Only `ABS` means
+#' two things: *Absorbance* in the substance list and *Number of branches on
+#' the current tree where algae are missing* in the parameter list.
+#'
+#' # `ABS` in `AL` is the branch count throughout
+#'
+#' Decoding follows `LISTSUB`/`PARLIST` as published, and for `ABS` in `AL`
+#' that gives the wrong name. Every `ABS` row there is the branch count - unit
+#' `branches`, values 0 to 3 - but from 2008 the count is tagged `"DB"`, so
+#' those rows (245 in versions 1 and 2) decode as *Absorbance*. Read `ABS` in
+#' `AL` as the branch count whatever its `parameter` column says.
 #'
 #' @param x A data frame from [im_read()] or [im_read_file()].
 #' @param quiet Logical. Suppress notes about codes that could not be matched.
@@ -95,10 +103,14 @@ first_named <- function(x, ...) {
 #   "DB" -> substance_codes.csv          (im_substances)
 #   "IM" -> parameters_..._subprogramme  (im_parameters)
 #
-# This matters rather than being pedantry: 77 codes appear in both lists, and
-# `ABS` means "Absorbance" in one and "Number of branches on the current tree
-# where algae are missing" in the other. Both occur in AL, in the same file,
-# distinguished only by PARLIST.
+# Codes in the IM list are absent from the substance list, so a lookup there
+# alone returns nothing for them. The lists overlap in 77 codes, but only ABS
+# means two things: "Absorbance" in the substance list, "Number of branches on
+# the current tree where algae are missing" in the parameter list. The tag is
+# followed as published even so. In AL every ABS row is the branch count
+# (unit branches, values 0-3), yet from 2008 it is tagged DB, and those rows
+# decode as "Absorbance" - a fault in the published tags, documented in
+# im_decode() rather than corrected here.
 #
 # No code carries two different meanings *within* the parameter list, so the
 # parameter lookup can be flattened across subprogrammes.

@@ -47,10 +47,14 @@ First release.
 * Decoding honours `LISTSUB`/`PARLIST`, which say whether a code belongs to the
   substance list (`"DB"`) or the IM parameter list (`"IM"`). Around 26,000 rows
   across seven subprogrammes use `IM` codes - `AOT40`, `SOL_G`, `CEC_E`,
-  `C/N`, `BDEN` - that are absent from the substance list entirely. It also
-  disambiguates the 77 codes present in both: `ABS` is *Absorbance* in one and
-  *Number of branches on the current tree where algae are missing* in the
-  other, and both occur in `AL`.
+  `C/N`, `BDEN` - that are absent from the substance list entirely. Of the 77
+  codes present in both lists, only `ABS` means two things: *Absorbance* in
+  the substance list, and *Number of branches on the current tree where algae
+  are missing* in the parameter list. In `AL` every `ABS` row is the branch
+  count, but from 2008 it is tagged `"DB"`, so 245 rows decode as
+  *Absorbance*. The tag is followed as published and the fault documented in
+  `im_decode()`; an earlier version of these notes said both meanings occur
+  in `AL`, which the units and values contradict.
 * `im_widen()` pivots to one column per determinand, keeping `FLAGSTA` in the
   key and erroring rather than collapsing duplicates silently. The error names
   the columns that vary within the colliding keys - usually `DETER`, the same

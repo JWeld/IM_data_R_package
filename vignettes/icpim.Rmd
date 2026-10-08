@@ -177,16 +177,20 @@ About 26,000 rows across seven subprogrammes use `IM` codes - `AOT40`,
 list at all. Looking those up in `substance_codes.csv` alone silently returns
 nothing.
 
-The overlap matters too. 77 codes are in both lists, and one means different
-things in each:
+The lists overlap in 77 codes. In 76 of them the parameter list simply
+repeats a substance, tagged `"DB"`, with the same meaning. One code means
+different things in each:
 
 ```{r}
 im_codes("substance", "^ABS$")$name
 subset(im_parameters, code == "ABS", select = c(subprog, name))$name
 ```
 
-Both readings occur in `AL`, in the same file, told apart only by `PARLIST`.
-`im_decode()` honours the discriminator, so you get the right name either way.
+`im_decode()` follows the tag as published, and for `ABS` in `AL` the tag is
+wrong. Every `ABS` row there is the branch count - unit `branches`, values 0
+to 3 - but from 2008 the count is tagged `"DB"`, so those rows decode as
+*Absorbance*. Read `ABS` in `AL` as the branch count whatever its `parameter`
+column says.
 
 ## Going wide
 

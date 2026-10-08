@@ -41,10 +41,18 @@ substance list (\link{im_substances}) and \code{"IM"} means the parameter list
 codes - \code{AOT40}, \code{SOL_G}, \code{CEC_E}, \code{C/N}, \code{BDEN} - and looking those up in
 the substance list alone returns nothing.
 
-It also matters where the lists overlap. 77 codes appear in both, and \code{ABS}
-means \emph{Absorbance} in one and \emph{Number of branches on the current tree where
-algae are missing} in the other. Both readings occur in \code{AL}, in the same
-file, told apart only by \code{PARLIST}.
+The lists overlap in 77 codes, but in 76 of them the parameter list
+repeats a substance, tagged \code{"DB"}, with the same meaning. Only \code{ABS} means
+two things: \emph{Absorbance} in the substance list and \emph{Number of branches on
+the current tree where algae are missing} in the parameter list.
+}
+
+\section{\code{ABS} in \code{AL} is the branch count throughout}{
+Decoding follows \code{LISTSUB}/\code{PARLIST} as published, and for \code{ABS} in \code{AL}
+that gives the wrong name. Every \code{ABS} row there is the branch count - unit
+\code{branches}, values 0 to 3 - but from 2008 the count is tagged \code{"DB"}, so
+those rows (245 in versions 1 and 2) decode as \emph{Absorbance}. Read \code{ABS} in
+\code{AL} as the branch count whatever its \code{parameter} column says.
 }
 
 \examples{
