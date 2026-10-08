@@ -49,17 +49,25 @@ Checked at commit e652454, 2026-09-18:
   * macOS-latest, R 4.6.1 (release)
   * windows-latest, R 4.6.1 ucrt (release)
 
+The code has changed since: the repository moved its download addresses
+between 18 September and 8 October 2026, and every download failed until the
+package followed it (see NEWS.md, "The repository's autumn 2026 change").
+These results are to be repeated before submission.
+
 Checked at an earlier commit, and to be repeated before submission:
 
 * win-builder: R-devel and R-release. Both returned Status: OK apart from the
   note above. The code has changed since (see NEWS.md, "Found by reading the
   real files"), so these results do not yet cover what will be submitted.
 
-The GitHub Actions runs additionally execute the \donttest examples, so the
-download paths described below have been exercised against the live
-repository. Separately, `data-raw/verify_release.R` was run at the same commit
-against the whole published deposit (21 files, 1,193,331 rows) and reported no
-problems.
+The GitHub Actions checks also run the \donttest examples, but those are
+wrapped in `try()`, so a failed download does not fail the check: after the
+repository moved its files every download failed and the checks still passed.
+The download paths are exercised instead by the live tests, which a separate
+workflow runs against the repository on every push and weekly, and which fail
+if the repository cannot be reached. Separately, `data-raw/verify_release.R`
+was run at e652454 against the whole published deposit (21 files, 1,193,331
+rows) and reported no problems.
 
 ## Network use and files written
 
@@ -68,8 +76,9 @@ that touches the network is handled as follows.
 
 * No network access at load time.
 * Downloads fail gracefully with an informative message: a missing
-  connection, an unpublished dataset version, and a file that has moved
-  within an existing version are distinguished and reported separately.
+  connection, an unreachable repository, a repository that refuses the
+  request, an unpublished dataset version, and a file that has moved within
+  an existing version are distinguished and reported separately.
 * Examples that need the repository are wrapped in `\donttest{}`, guarded by
   `if (curl::has_internet())`, and additionally wrapped in `try()`, since the
   repository can be unreachable even when the network is up. They fetch the
@@ -82,10 +91,14 @@ that touches the network is handled as follows.
   metadata requests after 30, and a file download that stalls for 60 seconds
   is abandoned, in place of libcurl's five-minute default. A failed metadata
   lookup is not repeated for 30 seconds.
-* The package is single-threaded and uses only https.
+* The package is single-threaded and uses only https. Files are fetched
+  from the address the repository lists for each, and only an https address
+  is accepted from that list.
 * Tests that reach the repository are skipped with `skip_on_cran()` and
   `skip_if_offline()`. The remaining tests run offline against those same
-  bundled extracts.
+  bundled extracts. Under `R CMD check` the test suite refuses every network
+  request and fails if any test makes one, so a test cannot reach the
+  network unnoticed.
 * Vignette chunks that would download are `eval = FALSE`.
 
 In normal interactive use the downloaded files are cached under

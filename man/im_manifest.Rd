@@ -13,8 +13,10 @@ im_manifest(version = im_version(), type = c("data", "documentation", "all"))
 manual and code lists, or \code{"all"}.}
 }
 \value{
-A tibble with \code{subprog}, \code{name}, \code{file}, \code{type} and \code{size_mb}.
-The \code{subprog} and \code{name} columns are \code{NA} for documentation files.
+A tibble with \code{subprog}, \code{name}, \code{file}, \code{type}, \code{size_mb}, \code{url}
+and \code{sha256}. The \code{subprog} and \code{name} columns are \code{NA} for documentation
+files. \code{url} is where the repository serves the file, and \code{sha256} its
+published checksum; both are \code{NA} in the bundled catalogue used offline.
 }
 \description{
 Reads the file list straight from the repository, so a release that adds,

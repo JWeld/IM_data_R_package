@@ -24,8 +24,12 @@ jobs:
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_KEEP_PKG_SOURCE: yes
-      # The tests must not reach the network; this makes a lapse fail loudly
-      # rather than pass on a runner that happens to have connectivity.
+      # Run the tests as CRAN would. The live tests skip, and tests/testthat/
+      # setup.R refuses every other network request and records it, so that
+      # test-zzz-offline.R fails if any test reached for the network. Setting
+      # NOT_CRAN alone would not do that: the package falls back quietly when
+      # the repository cannot answer, so such a test still passed. The live
+      # tests run in live-tests.yaml instead.
       NOT_CRAN: false
 
     steps:

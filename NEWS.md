@@ -254,6 +254,45 @@ release this package was not built against.
   cache directory with nothing but fetched code lists, or the remains of an
   interrupted download, used to count.
 
+## The repository's autumn 2026 change
+
+Between 18 September and 8 October 2026 the repository changed how it serves
+and lists its files, and every download failed. Nothing reported it: the
+network examples are wrapped in `try()` and the live tests are skipped under
+`R CMD check`, so the checks stayed green.
+
+* **Downloads work again.** The address this package built for each file now
+  answers 401. Files are fetched from the address the repository lists for
+  them instead, and the address is built by hand only when that list cannot
+  be read. Only an https address is accepted from the list.
+* **`im_manifest()` reads the new file list.** It now names files with their
+  folder (`data/AC_air_chemistry.csv`) and uses `type` for the access level
+  (`"open"`) rather than for data versus documentation, so the manifest came
+  back empty without a word. The folder now decides, and a list in which
+  nothing can be classified warns and falls back to the bundled catalogue
+  rather than reporting a release with no files. `im_manifest()` gains `url`
+  and `sha256` columns.
+* Downloads are checked against the SHA-256 checksum the repository now
+  publishes before they are cached, on R 4.5 or later, where
+  `tools::sha256sum()` exists. A mismatch is an error and nothing is cached.
+  The code lists fetched by `im_update_codes()` are checked the same way.
+* A download the repository refuses with 401 or 403 says the repository may
+  have moved its files. It used to say the file may have been renamed or
+  withdrawn, and send the reader to `im_manifest()`, which was empty.
+* `data-raw/make_data.R` fetches the code lists through the package's own
+  download, with the same addresses and checksums, rather than an address of
+  its own.
+* The live tests run against the repository in a `live-tests` workflow, on
+  every push and pull request and weekly, and fail rather than skip when the
+  repository cannot be reached. They now check that every listed file has an
+  https address and a checksum, that a download matches its checksum, and
+  that the code lists can be fetched.
+* Under `R CMD check` the test suite refuses network requests, and fails
+  naming each one if any test made one. Three tests asked the repository about
+  version 1: written when it was the bundled release, they reached for the
+  network once the bundle moved to version 2, and passed because the package
+  falls back quietly when the repository cannot answer.
+
 ## Data
 
 * `im_subprogrammes`, `im_sites`, `im_substances`, `im_parameters`,

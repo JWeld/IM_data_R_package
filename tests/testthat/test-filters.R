@@ -69,7 +69,9 @@ test_that("an already-empty table does not warn again on every filter", {
 })
 
 test_that("known_subprogs returns the same columns whichever branch it takes", {
-  bundled <- known_subprogs("1")
+  # The bundled release by name: "1" was the bundled branch once, and after the
+  # move to version 2 it sent this test to the network.
+  bundled <- known_subprogs(IM_BUNDLED_VERSION)
   expect_setequal(names(bundled), c("subprog", "name", "file", "collection", "key"))
 
   local_mocked_bindings(im_manifest = function(version = im_version(), type = "data") {

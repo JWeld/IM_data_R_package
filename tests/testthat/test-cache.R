@@ -39,8 +39,11 @@ test_that("a pinned version is read as written", {
 
 test_that("file URLs are built against the pinned version", {
   url <- im_file_url("PC_precipitation_chemistry.csv", "data", version = "1")
-  expect_match(url, "2024-180/1/data")
-  expect_match(url, "filePath=PC_precipitation_chemistry\\.csv")
+  expect_match(url, "^https://")
+  expect_match(url, "2024-180/1/data/PC_precipitation_chemistry\\.csv$")
+  # A name with a space is one path segment, encoded as the repository does.
+  expect_match(im_file_url("IM Manual edition 8.pdf", "documentation", "2"),
+               "/documentation/IM%20Manual%20edition%208\\.pdf$")
 })
 
 test_that("the DOIs are the published ones", {

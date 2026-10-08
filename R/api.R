@@ -278,8 +278,10 @@ im_check_version <- function(quiet = FALSE) {
 #' @param type `"data"` for the subprogramme files, `"documentation"` for the
 #'   manual and code lists, or `"all"`.
 #'
-#' @return A tibble with `subprog`, `name`, `file`, `type` and `size_mb`.
-#'   The `subprog` and `name` columns are `NA` for documentation files.
+#' @return A tibble with `subprog`, `name`, `file`, `type`, `size_mb`, `url`
+#'   and `sha256`. The `subprog` and `name` columns are `NA` for documentation
+#'   files. `url` is where the repository serves the file, and `sha256` its
+#'   published checksum; both are `NA` in the bundled catalogue used offline.
 #' @export
 #' @examples
 #' \donttest{
@@ -292,16 +294,13 @@ im_manifest <- function(version = im_version(),
   type <- match.arg(type)
   version <- resolve_version(version)
   d <- im_api_dataset(version)
+  out <- if (is.null(d)) NULL else parse_file_list(d$file)
 
-  # A record can arrive without its file list, not only not at all - or with
-  # a list that has no names or no types, which leaves every typed view of it
-  # empty. All of these mean the same thing here: the repository's answer is
-  # unusable.
-  f <- if (is.null(d)) NULL else d$file
-  if (is.null(f) || is.null(f$name) || !length(f$name) || is.null(f$type)) {
+  if (is.null(out)) {
     # A version the repository has just said does not exist is a different
-    # problem from a repository that could not be read, and the advice
-    # differs: pick a version that exists, rather than try again later.
+    # problem from a repository that could not be read, and both differ from
+    # an answer this package cannot make sense of. The advice differs too:
+    # pick a version that exists, try again later, or report it.
     if (is.null(d) && version_absent(version)) {
       cli::cli_warn(c(
         "Version {.val {version}} is not published; using the bundled
@@ -309,11 +308,19 @@ im_manifest <- function(version = im_version(),
         "i" = "It describes version {.val {IM_BUNDLED_VERSION}}.
                {.fn im_latest_version} says which release is newest."
       ))
-    } else {
+    } else if (is.null(d)) {
       cli::cli_warn(c(
         "Could not read the file list from the repository; using the bundled
          catalogue.",
         "i" = "It describes version {.val {IM_BUNDLED_VERSION}} and may be out of date."
+      ))
+    } else {
+      cli::cli_warn(c(
+        "The repository's file list is not in a form this package recognises;
+         using the bundled catalogue.",
+        "i" = "It describes version {.val {IM_BUNDLED_VERSION}} and may be out of date.",
+        "i" = "Please report this at {.url {IM_BUG_REPORTS}}: the repository
+               has probably changed how it lists its files."
       ))
     }
     out <- tibble::tibble(
@@ -321,16 +328,47 @@ im_manifest <- function(version = im_version(),
       name    = im_subprogrammes$name,
       file    = im_subprogrammes$file,
       type    = "data",
-      size_mb = NA_real_
+      size_mb = NA_real_,
+      url     = NA_character_,
+      sha256  = NA_character_
     )
     return(if (type == "documentation") out[0, ] else out)
   }
 
+  switch(type,
+    data          = out[out$type %in% "data", ],
+    documentation = out[out$type %in% "documentation", ],
+    all           = out
+  )
+}
+
+# The repository's file list as a manifest, or NULL if it cannot be read as
+# one.
+#
+# The list has come in two shapes. Until autumn 2026 each file had a bare
+# name and a `type` of "data" or "documentation". Since then the name carries
+# the folder ("data/AC_air_chemistry.csv"), `type` is the access level
+# ("open"), and each file has its own `url` and `sha256`. Read under the old
+# rules, the new list classified nothing as data and the manifest came back
+# empty without a word. So the folder decides where there is one, `type`
+# where there is not - and a list in which nothing can be classified is
+# unusable, which im_manifest() says out loud, rather than a release with no
+# files.
+parse_file_list <- function(f) {
+  if (is.null(f) || is.null(f$name) || !length(f$name)) return(NULL)
   nm <- as.character(f$name)
+  n  <- length(nm)
+
+  folder <- ifelse(grepl("/", nm, fixed = TRUE), sub("/.*$", "", nm), NA_character_)
+  type   <- ifelse(is.na(folder), chr_n(f$type, n), folder)
+  if (!any(type %in% c("data", "documentation"))) return(NULL)
+
   out <- tibble::tibble(
-    file    = nm,
-    type    = as.character(f$type),
-    size_mb = round(num_n(f$contentSize, length(nm)) / 1024^2, 2)
+    file    = basename(nm),
+    type    = type,
+    size_mb = round(num_n(f$contentSize, n) / 1024^2, 2),
+    url     = chr_n(f$url, n),
+    sha256  = tolower(chr_n(f$sha256, n))
   )
   # %in%, not ==: an NA type must not become an NA subscript downstream.
   out$subprog <- ifelse(
@@ -345,12 +383,6 @@ im_manifest <- function(version = im_version(),
   out$name[is.na(out$name) & !is.na(out$subprog)] <-
     derived[is.na(out$name) & !is.na(out$subprog)]
 
-  out <- out[, c("subprog", "name", "file", "type", "size_mb")]
-  out <- out[order(is.na(out$subprog), out$file), ]
-
-  switch(type,
-    data          = out[out$type %in% "data", ],
-    documentation = out[out$type %in% "documentation", ],
-    all           = out
-  )
+  out <- out[, c("subprog", "name", "file", "type", "size_mb", "url", "sha256")]
+  out[order(is.na(out$subprog), out$file), ]
 }

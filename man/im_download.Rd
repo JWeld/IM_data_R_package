@@ -41,7 +41,9 @@ the CSVs to something that is not R without parsing them first.
 
 Downloads are atomic: each file is written to a temporary path and only
 moved into place once complete, so an interrupted download cannot leave a
-truncated file that later looks cached.
+truncated file that later looks cached. Files are fetched from the address
+the repository lists for them, and on R 4.5 or later each is checked
+against the SHA-256 checksum the repository publishes before it is cached.
 }
 \examples{
 \donttest{

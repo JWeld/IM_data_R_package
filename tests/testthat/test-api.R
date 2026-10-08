@@ -133,6 +133,10 @@ test_that("the bundled release resolves without touching the network", {
 })
 
 test_that("subprogrammes resolve from the bundled catalogue without network", {
+  # Version 1 is not the bundled release, so this asks the repository first;
+  # here it cannot answer. Unmocked, this test reached the network under R CMD
+  # check once the bundled release moved to version 2.
+  local_mocked_bindings(im_api_dataset = function(version = NULL) NULL)
   expect_equal(nrow(known_subprogs("1")), 21L)
   expect_equal(subprog_file("PC", "1"), "PC_precipitation_chemistry.csv")
   expect_equal(subprog_file("MC", "1"), "MC_metal_chemistry_mosses.csv")
@@ -188,6 +192,7 @@ test_that("the bundled version needs no fetch and gives no warning", {
 })
 
 test_that("resolve_subprog reports the codes valid for the release asked for", {
+  local_mocked_bindings(im_api_dataset = function(version = NULL) NULL)
   expect_error(resolve_subprog("ZZ", version = "1"), "Unknown subprogramme")
   expect_equal(resolve_subprog("pc", version = "1"), "PC")
 })
@@ -202,12 +207,47 @@ test_that("the repository reports a version and a file list", {
   expect_false(is.na(latest))
   expect_true(as.numeric(latest) >= 1)
 
-  man <- im_manifest("1", "data")
-  expect_gte(nrow(man), 21L)
-  expect_true(all(c("subprog", "file", "size_mb") %in% names(man)))
-  expect_true(all(im_subprogrammes$subprog %in% man$subprog))
-  # Sizes are real, so a stale figure cannot be reported.
-  expect_true(all(man$size_mb > 0))
+  for (v in unique(c("1", IM_BUNDLED_VERSION))) {
+    # No warning: one would mean the list was unreadable and this is the
+    # bundled catalogue standing in for it.
+    expect_no_warning(man <- im_manifest(v, "data"))
+    expect_gte(nrow(man), 21L)
+    expect_true(all(c("subprog", "file", "size_mb", "url", "sha256") %in% names(man)))
+    expect_true(all(im_subprogrammes$subprog %in% man$subprog))
+    # Sizes are real, so a stale figure cannot be reported.
+    expect_true(all(man$size_mb > 0))
+    # Every file has an address to fetch it from and a checksum to hold it to.
+    expect_true(all(grepl("^https://", man$url)))
+    expect_true(all(grepl("^[0-9a-f]{64}$", man$sha256)))
+
+    doc <- im_manifest(v, "documentation")
+    expect_true(all(IM_CODE_FILES %in% doc$file))
+  }
+})
+
+test_that("a subprogramme downloads from the repository and matches its checksum", {
+  skip_if_repository_unreachable()
+  withr::local_options(icpim.cache_dir = withr::local_tempdir(), icpim.quiet = TRUE)
+  # The smallest file, about 14 kB. A checksum mismatch errors before caching.
+  path <- im_download("MC", version = IM_BUNDLED_VERSION)
+  expect_true(file.exists(path))
+  man <- im_manifest(IM_BUNDLED_VERSION, "data")
+  expect_equal(file.size(path),
+               man$size_mb[man$subprog == "MC"] * 1024^2, tolerance = 0.01 * 1024^2)
+  expect_false(isFALSE(sha256_matches(path, man$sha256[man$subprog == "MC"])))
+})
+
+test_that("the code lists can be fetched from the repository", {
+  skip_if_repository_unreachable()
+  withr::local_options(icpim.cache_dir = withr::local_tempdir(), icpim.quiet = TRUE)
+  # Fetched for the bundled release, which is never otherwise fetched, so
+  # what comes back can be compared with what the package ships.
+  path <- im_update_codes(IM_BUNDLED_VERSION)
+  expect_false(is.null(path))
+  tabs <- readRDS(path)
+  expect_setequal(names(tabs), names(IM_CODE_FILES))
+  for (nm in names(tabs)) expect_true(valid_code_table(tabs[[nm]], nm), info = nm)
+  expect_equal(nrow(tabs$substances), nrow(im_substances))
 })
 
 test_that("a version that does not exist is reported as absent, not as an error", {

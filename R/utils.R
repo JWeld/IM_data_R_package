@@ -36,6 +36,13 @@ num_n <- function(x, n) {
   if (length(out) == n) out else rep(NA_real_, n)
 }
 
+# The character counterpart of num_n(), with chr1()'s rules for each value.
+chr_n <- function(x, n) {
+  if (is.null(x)) return(rep(NA_character_, n))
+  out <- vapply(x, chr1, character(1), USE.NAMES = FALSE)
+  if (length(out) == n) out else rep(NA_character_, n)
+}
+
 # Internal accessor so package code does not depend on lazy-data promises
 # being visible to R CMD check.
 subprog_meta <- function() icpim::im_subprogrammes

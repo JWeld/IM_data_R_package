@@ -44,8 +44,15 @@ IM_BUNDLED_INFO <- list(
   licence   = "CC BY 4.0"
 )
 
+IM_BUG_REPORTS <- "https://github.com/JWeld/IM_data_R_package/issues"
+
 IM_API_BASE  <- "https://api.researchdata.se/dataset"
-IM_FILE_BASE <- "https://doris.snd.se/api/file"
+# Where the files are served from when the repository's file list cannot be
+# read. Normally each file's address is taken from that list instead (see
+# file_source()), because the repository has moved them before: until
+# autumn 2026 they were under https://doris.snd.se/api/file, which now
+# answers 401 to everything.
+IM_FILE_BASE <- "https://slu.open.care.snd.se/downloads/public"
 
 #' Identifiers for the underlying dataset
 #'
@@ -201,15 +208,31 @@ im_cite <- function(version = im_version()) {
 
 # File URL construction ---------------------------------------------------
 
+# The address a file would have if the repository still serves files the way
+# it did when this package was last changed. A fallback only: file_source()
+# prefers the address the repository lists.
 im_file_url <- function(file, type = c("data", "documentation"),
                         version = im_version()) {
   type <- match.arg(type)
   version <- resolve_version(version)
   sprintf(
-    "%s/%s/%s/%s?filePath=%s",
+    "%s/%s/%s/%s/%s",
     IM_FILE_BASE, IM_DATASET_ID, version, type,
-    utils::URLencode(file, reserved = TRUE)
+    utils::URLencode(basename(file), reserved = TRUE)
   )
+}
+
+# Where to fetch a published file from, and the checksum to hold it to. Both
+# come from the repository's own file list when `man` (from im_manifest()) has
+# the file; otherwise the address is built by hand and nothing is checked. Only
+# an https address is taken from the list, so a damaged or tampered answer
+# cannot send a download elsewhere in the clear.
+file_source <- function(file, type, version, man = NULL) {
+  i <- if (is.null(man) || !nrow(man)) NA_integer_ else match(basename(file), man$file)
+  url    <- if (is.na(i)) NA_character_ else man$url[[i]]
+  sha256 <- if (is.na(i)) NA_character_ else man$sha256[[i]]
+  if (is.na(url) || !grepl("^https://", url)) url <- im_file_url(file, type, version)
+  list(url = url, sha256 = sha256)
 }
 
 #' The dataset version this session reads

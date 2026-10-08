@@ -18,7 +18,9 @@
 #'
 #' Downloads are atomic: each file is written to a temporary path and only
 #' moved into place once complete, so an interrupted download cannot leave a
-#' truncated file that later looks cached.
+#' truncated file that later looks cached. Files are fetched from the address
+#' the repository lists for them, and on R 4.5 or later each is checked
+#' against the SHA-256 checksum the repository publishes before it is cached.
 #'
 #' @param subprog Character vector of two-letter subprogramme codes, e.g.
 #'   `"PC"`. Use `"all"` for every subprogramme. See [im_subprogrammes].
@@ -55,8 +57,9 @@ im_download <- function(subprog, overwrite = FALSE, quiet = NULL,
   meta  <- meta[match(codes, meta$subprog), ]
   dir   <- im_cache_dir(version, create = TRUE)
 
-  # Sizes come from the repository when it can be reached, so the figure
-  # quoted is the one for this release rather than a remembered one.
+  # Addresses, checksums and sizes come from the repository when it can be
+  # reached, so the figure quoted is the one for this release rather than a
+  # remembered one.
   sizes <- stats::setNames(rep(NA_real_, length(codes)), codes)
   man <- suppressWarnings(tryCatch(im_manifest(version, "data"), error = function(e) NULL))
   if (!is.null(man)) sizes[codes] <- man$size_mb[match(codes, man$subprog)]
@@ -71,14 +74,14 @@ im_download <- function(subprog, overwrite = FALSE, quiet = NULL,
       if (!quiet) cli::cli_alert_info("{.field {meta$subprog[i]}} already cached.")
       return(dest)
     }
-    url <- im_file_url(file, "data", version)
+    src <- file_source(file, "data", version, man)
     if (!quiet) {
       sz <- sizes[[meta$subprog[i]]]
       cli::cli_alert_info(
         "Downloading {.field {meta$subprog[i]}} ({meta$name[i]}){if (is.na(sz)) '' else paste0(', ~', sz, ' MB')} ..."
       )
     }
-    fetch_file(url, dest, quiet = quiet, version = version)
+    fetch_file(src$url, dest, quiet = quiet, version = version, sha256 = src$sha256)
     dest
   }, character(1))
 
@@ -89,7 +92,10 @@ im_download <- function(subprog, overwrite = FALSE, quiet = NULL,
 }
 
 # Atomic download. Errors are turned into one clear message rather than curl's.
-fetch_file <- function(url, dest, quiet = TRUE, version = im_version()) {
+# `sha256`, where the repository published one, is checked before the file is
+# moved into place, so a file that arrived damaged is never cached.
+fetch_file <- function(url, dest, quiet = TRUE, version = im_version(),
+                       sha256 = NA_character_) {
   tmp <- paste0(dest, ".part-", Sys.getpid())
   on.exit(unlink(tmp), add = TRUE)
 
@@ -106,18 +112,25 @@ fetch_file <- function(url, dest, quiet = TRUE, version = im_version()) {
       TRUE
     },
     error = function(e) {
-      # Four quite different causes, and the advice differs completely
+      # Five quite different causes, and the advice differs completely
       # between them: no connection, a repository that cannot be reached, a
-      # release that was never published, or a file that has moved within a
-      # release that exists. A 404 blamed on the network sends the reader
-      # looking in the wrong place - and an outage blamed on the version
-      # sends them re-pinning a release that exists. The existence check
-      # cannot tell absent from unreachable on its own, so ask about the
-      # dataset as a whole first.
+      # repository that refuses the request, a release that was never
+      # published, or a file that has moved within a release that exists. A
+      # 404 blamed on the network sends the reader looking in the wrong place
+      # - and an outage blamed on the version sends them re-pinning a release
+      # that exists. The existence check cannot tell absent from unreachable
+      # on its own, so ask about the dataset as a whole first.
+      status <- http_status(e)
       cause <- if (!curl::has_internet()) {
         c("i" = "There is no network connection.")
       } else if (is.null(im_api_dataset(NULL))) {
         c("i" = "The repository could not be reached. Try again later.")
+      } else if (status %in% c(401L, 403L)) {
+        # What the old download address answered to everything once the
+        # repository moved its files. Not a missing file: a refusal.
+        c("i" = "The repository refused the request (HTTP {status}). It may
+                 have moved its files.",
+          "i" = "Please report this at {.url {IM_BUG_REPORTS}}.")
       } else if (!im_version_exists(version)) {
         c("i" = "Version {.val {version}} is not published.",
           "i" = "Pin one that is with {.code options(icpim.version = ...)};
@@ -166,6 +179,15 @@ fetch_file <- function(url, dest, quiet = TRUE, version = im_version()) {
         call = NULL
       )
     }
+    if (isFALSE(sha256_matches(tmp, sha256))) {
+      cli::cli_abort(
+        c("{.url {url}} did not match the checksum the repository publishes
+           for it.",
+          "i" = "Nothing was cached. The download was probably damaged in
+                 transit; try again."),
+        call = NULL
+      )
+    }
     if (!file.rename(tmp, dest)) {
       cli::cli_abort(
         c("Downloaded {.url {url}} but could not move it into the cache.",
@@ -175,6 +197,29 @@ fetch_file <- function(url, dest, quiet = TRUE, version = im_version()) {
     }
   }
   invisible(dest)
+}
+
+# The HTTP status behind a failed download, or NA. curl reports it only in
+# the message of a `curl_error_http_returned_error`.
+http_status <- function(e) {
+  if (!inherits(e, "curl_error_http_returned_error")) return(NA_integer_)
+  m <- regmatches(conditionMessage(e),
+                  regexpr("[0-9]{3}(?=[^0-9]*$)", conditionMessage(e), perl = TRUE))
+  if (length(m)) as.integer(m) else NA_integer_
+}
+
+# Does a file match its published SHA-256? NA when that cannot be said: no
+# checksum was published, or this R has no way to compute one.
+# tools::sha256sum() arrived in R 4.5.0, and the package supports older
+# versions rather than take a dependency for one check; it is looked up at
+# run time so that R CMD check under an older R does not report it missing.
+sha256_matches <- function(path, expected) {
+  expected <- chr1(expected)
+  if (is.na(expected)) return(NA)
+  hash <- get0("sha256sum", envir = asNamespace("tools"), mode = "function",
+               inherits = FALSE)
+  if (is.null(hash)) return(NA)
+  identical(tolower(unname(hash(path))), tolower(expected))
 }
 
 # Does a downloaded file start like HTML rather than CSV?

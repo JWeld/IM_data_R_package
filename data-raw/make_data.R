@@ -21,12 +21,12 @@
 library(tibble)
 pkgload::load_all(quiet = TRUE)   # for read_doc_csv() and IM_BUNDLED_VERSION
 
-doc_url <- function(f) {
-  sprintf(
-    "https://doris.snd.se/api/file/2024-180/%s/documentation?filePath=%s",
-    IM_BUNDLED_VERSION, utils::URLencode(f, reserved = TRUE)
-  )
-}
+# The repository's own file list says where each file is served from and what
+# its checksum is. Without it the build would fetch from a hand-built address,
+# which is how it broke when the repository moved its files in autumn 2026,
+# so a list that cannot be read stops the build.
+doc_manifest <- im_manifest(IM_BUNDLED_VERSION, "documentation")
+stopifnot(nrow(doc_manifest) > 0, !anyNA(doc_manifest$url))
 
 # vroom rather than read.csv: it strips the BOM, and it reads UTF-8 regardless
 # of the session locale. read.csv(fileEncoding = "UTF-8-BOM") silently
@@ -35,8 +35,10 @@ doc_url <- function(f) {
 read_doc <- function(f) {
   tmp <- tempfile(fileext = ".csv")
   on.exit(unlink(tmp), add = TRUE)
-  utils::download.file(doc_url(f), tmp, quiet = TRUE, mode = "wb")
-  # The package's own reader, so the build and the runtime cannot drift apart.
+  # The package's own download and reader, so the build and the runtime
+  # cannot drift apart.
+  src <- file_source(f, "documentation", IM_BUNDLED_VERSION, doc_manifest)
+  fetch_file(src$url, tmp, version = IM_BUNDLED_VERSION, sha256 = src$sha256)
   read_doc_csv(tmp)
 }
 

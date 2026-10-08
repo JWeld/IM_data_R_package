@@ -143,9 +143,12 @@ test_that("unusable lists are not cached, and a partial cache is completed", {
     determination_codes = "DeterminationCode,Description,NOTE\nAAS,Atomic absorption,NULL"
   )
   serve <- c("substance_codes")            # what the repository manages today
+  # No file list from the repository, so each list is fetched from the
+  # address built by hand.
+  local_mocked_bindings(im_api_dataset = function(version = NULL) NULL)
   local_mocked_bindings(
     curl_download = function(url, destfile, ...) {
-      nm <- sub("\\.csv$", "", sub("^.*filePath=", "", url))
+      nm <- sub("\\.csv$", "", basename(url))
       if (nm == "pretreatment_codes") {
         writeLines("<html>Service unavailable</html>", destfile)   # 200, not CSV
       } else if (nm == "parameters_and_codes_by_subprogramme") {

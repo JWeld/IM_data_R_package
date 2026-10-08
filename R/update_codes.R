@@ -147,17 +147,22 @@ im_update_codes <- function(version = im_version(), quiet = NULL) {
   quiet <- quiet %||% getOption("icpim.quiet", FALSE)
   version <- with_quiet(quiet, resolve_version(version))
   dest <- code_cache_path(version)
+  man <- suppressWarnings(tryCatch(im_manifest(version, "documentation"),
+                                   error = function(e) NULL))
 
   tabs <- list()
   for (nm in names(IM_CODE_FILES)) {
     tmp <- tempfile(fileext = ".csv")
+    src <- file_source(IM_CODE_FILES[[nm]], "documentation", version, man)
     # Each list on its own, start to finish: a download that fails, an error
-    # page served with status 200, or a file whose columns have changed loses
-    # that one list, not the other four and not the read that asked for them.
+    # page served with status 200, a file that does not match its checksum,
+    # or one whose columns have changed loses that one list, not the other
+    # four and not the read that asked for them.
     tab <- tryCatch({
-      curl::curl_download(im_file_url(IM_CODE_FILES[[nm]], "documentation", version),
-                          tmp, quiet = TRUE, mode = "wb", handle = im_handle())
+      curl::curl_download(src$url, tmp, quiet = TRUE, mode = "wb",
+                          handle = im_handle())
       if (!isTRUE(file.size(tmp) > 0) || is_web_page(tmp)) stop("not a CSV file")
+      if (isFALSE(sha256_matches(tmp, src$sha256))) stop("checksum mismatch")
       build_code_tables(stats::setNames(list(read_doc_csv(tmp)), nm))[[nm]]
     }, error = function(e) NULL)
     unlink(tmp)

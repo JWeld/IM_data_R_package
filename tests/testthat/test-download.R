@@ -55,6 +55,32 @@ test_that("a file missing from a release that does exist says so", {
   expect_match(err, "renamed or withdrawn")
 })
 
+test_that("a refused download says the repository may have moved its files", {
+  # What the old download address answered to everything once the repository
+  # moved its files in autumn 2026. The file was not missing, so "renamed or
+  # withdrawn" sent the reader looking in the wrong place.
+  refused <- structure(
+    class = c("curl_error_http_returned_error", "curl_error", "error", "condition"),
+    list(message = paste0("HTTP response code said error [doris.snd.se]:\n",
+                          "The requested URL returned error: 401"),
+         call = NULL)
+  )
+  local_mocked_bindings(
+    curl_download = function(...) stop(refused),
+    has_internet = function(...) TRUE,
+    .package = "curl"
+  )
+  local_mocked_bindings(im_api_dataset = function(version = NULL) list(doi = "x"))
+
+  # Unwrapped, since cli breaks long lines wherever the width falls.
+  err <- gsub("\\s+", " ", cli::ansi_strip(fetch_and_catch("2")))
+  expect_match(err, "refused the request (HTTP 401). It may have moved its files",
+               fixed = TRUE)
+  expect_no_match(err, "renamed or withdrawn")
+  expect_identical(http_status(refused), 401L)
+  expect_identical(http_status(simpleError("returned error: 401")), NA_integer_)
+})
+
 test_that("a genuine network failure still says so", {
   local_mocked_bindings(
     curl_download = function(...) stop("Could not resolve host"),
