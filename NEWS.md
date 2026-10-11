@@ -45,9 +45,11 @@ First release.
 * `im_decode()` adds `substance`/`parameter`, `determination`, `pretreatment`,
   `stat` and `quality`. `im_codes()` searches the code lists.
 * Decoding honours `LISTSUB`/`PARLIST`, which say whether a code belongs to the
-  substance list (`"DB"`) or the IM parameter list (`"IM"`). Around 26,000 rows
-  across seven subprogrammes use `IM` codes - `AOT40`, `SOL_G`, `CEC_E`,
-  `C/N`, `BDEN` - that are absent from the substance list entirely. Of the 77
+  substance list (`"DB"`) or the IM parameter list (`"IM"`). In the chemistry
+  subprogrammes around 26,000 rows, across seven of them, carry `IM` codes in
+  `SUBST` - `AOT40`, `SOL_G`, `CEC_E`, `C/N`, `BDEN` - and in the biological
+  ones nearly every `PARAM` code is from the IM list; none of these is in the
+  substance list. Of the 77
   codes present in both lists, only `ABS` means two things: *Absorbance* in
   the substance list, and *Number of branches on the current tree where algae
   are missing* in the parameter list. In `AL` every `ABS` row is the branch
@@ -151,10 +153,12 @@ this package, so an ordinary release needs no code change:
 
 ## Hardening
 
-Five failures reported against the first working version. None was reachable
-with the published files as they stand - every one of the 21 carries `AREA`,
-`YYYYMM`, `VALUE` and `UNIT` - so these guard against a release whose column
-set differs, or a session whose state does.
+Failures reported against the first working version, and the findings of a
+review run with the data hosts unreachable, as they are on a CRAN check
+machine. The last five below were not reachable with the published files as
+they stand - every one of the 21 carries `AREA`, `YYYYMM`, `VALUE` and
+`UNIT` - so they guard against a release whose column set differs, or a
+session whose state does.
 
 * Examples and the vignette name the bundled release explicitly wherever a
   `version` is involved, so `R CMD check` never resolves `"latest"` against
@@ -344,5 +348,6 @@ network examples are wrapped in `try()` and the live tests are skipped under
   `im_determinations`, `im_pretreatments` and `im_flags`.
 * `im_flags` records all ten `FLAGSTA` codes. The deposit's `README.txt` lists
   five; `A`, `Z`, `XA`, `XZ` and `SZ` are defined in the AM section of the ICP
-  IM Manual and occur in 36,522 rows.
+  IM Manual and occur in 56,122 rows of version 1, all but 168 of them in
+  `AM`.
 * `im_example()` gives four small real extracts for offline use.

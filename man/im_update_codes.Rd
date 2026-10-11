@@ -22,8 +22,8 @@ the published lists are downloaded and cached, then used in preference to
 the bundled ones.
 }
 \details{
-This happens on its own the first time you read a version the package was
-not built against, so you do not normally need to call it. Use it to
+This happens on its own the first time you read or download a version the
+package was not built against, so you do not normally need to call it. Use it to
 refresh a cached copy, or to warm the cache before going offline.
 }
 \examples{

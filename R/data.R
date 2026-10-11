@@ -33,8 +33,9 @@
 #' Site codes, names and coordinates, from `IM_sites_info.csv` in the deposit.
 #' Join to data with `AREA` (in the data) against `area` (here).
 #'
-#' Note that the deposit lists 55 sites while any one subprogramme covers
-#' fewer; not every site reports every subprogramme.
+#' The deposit lists 55 sites in 15 countries, but only 46 of them, in 14
+#' countries, have data in the published files: the nine Polish sites have
+#' none. Not every site with data reports every subprogramme, either.
 #'
 #' @format A tibble with 55 rows and 6 columns:
 #' \describe{
@@ -109,8 +110,8 @@
 #'
 #' The deposit's `README.txt` lists five `FLAGSTA` codes. The AM (meteorology)
 #' section of the ICP IM Manual defines five more - `A`, `Z`, `XA`, `XZ` and
-#' `SZ` - and these do occur, in 36,522 rows of version 1. All ten are
-#' recorded here.
+#' `SZ` - and these do occur, in 56,122 rows of version 1, all but 168 of
+#' them in `AM`. All ten are recorded here.
 #'
 #' `FLAGSTA` is part of the observation key rather than an annotation: the
 #' same site, level, month and parameter can carry a mean, a minimum and a

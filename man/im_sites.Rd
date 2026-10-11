@@ -25,8 +25,9 @@ Site codes, names and coordinates, from \code{IM_sites_info.csv} in the deposit.
 Join to data with \code{AREA} (in the data) against \code{area} (here).
 }
 \details{
-Note that the deposit lists 55 sites while any one subprogramme covers
-fewer; not every site reports every subprogramme.
+The deposit lists 55 sites in 15 countries, but only 46 of them, in 14
+countries, have data in the published files: the nine Polish sites have
+none. Not every site with data reports every subprogramme, either.
 }
 \examples{
 subset(im_sites, country == "SE")

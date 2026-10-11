@@ -37,9 +37,11 @@ works.
 The determinand column draws on two published lists, and a companion column
 says which: \code{LISTSUB} for \code{SUBST}, \code{PARLIST} for \code{PARAM}. \code{"DB"} means the
 substance list (\link{im_substances}) and \code{"IM"} means the parameter list
-(\link{im_parameters}). Roughly 26,000 rows across seven subprogrammes use \code{IM}
-codes - \code{AOT40}, \code{SOL_G}, \code{CEC_E}, \code{C/N}, \code{BDEN} - and looking those up in
-the substance list alone returns nothing.
+(\link{im_parameters}). In the chemistry subprogrammes roughly 26,000 rows,
+across seven of them, carry \code{IM} codes in \code{SUBST} - \code{AOT40}, \code{SOL_G},
+\code{CEC_E}, \code{C/N}, \code{BDEN} - and in the biological ones nearly every \code{PARAM}
+code is from the IM list. None of these is in the substance list, so
+looking them up there alone returns nothing.
 
 The lists overlap in 77 codes, but in 76 of them the parameter list
 repeats a substance, tagged \code{"DB"}, with the same meaning. Only \code{ABS} means

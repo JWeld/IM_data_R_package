@@ -66,8 +66,9 @@ repository moved its files every download failed and the checks still passed.
 The download paths are exercised instead by the live tests, which a separate
 workflow runs against the repository on every push and weekly, and which fail
 if the repository cannot be reached. Separately, `data-raw/verify_release.R`
-was run at e652454 against the whole published deposit (21 files, 1,193,331
-rows) and reported no problems.
+was run at 6ba9e96, on 2026-10-08, against the whole of version 2 (21 files,
+1,193,331 rows, each checked against its published SHA-256) and reported no
+problems.
 
 ## Network use and files written
 
@@ -82,7 +83,7 @@ that touches the network is handled as follows.
 * Examples that need the repository are wrapped in `\donttest{}`, guarded by
   `if (curl::has_internet())`, and additionally wrapped in `try()`, since the
   repository can be unreachable even when the network is up. They fetch the
-  smallest subprogramme (about 14 kB) and set
+  smallest subprogramme (about 14 kB) or the code lists (about 135 kB) and set
   `options(icpim.cache_dir = tempfile())` first, restoring the option
   afterwards, so a check run writes nothing outside the session temporary
   directory. Examples that need no network run unguarded against small

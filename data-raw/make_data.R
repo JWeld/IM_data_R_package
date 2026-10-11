@@ -68,7 +68,8 @@ stopifnot(im_substances$name[im_substances$code == "NA"] == "Sodium")
 # From the ICP IM Manual edition 8, section 4.3.2, plus the AM-specific table
 # in section 7.2.5. The dataset README lists only the five general FLAGSTA
 # codes; A, Z, XA, XZ and SZ are documented in the AM section and do occur in
-# the data (36,522 rows between them), so all ten are recorded here.
+# the data (56,122 rows between them in version 1, nearly all in AM), so all
+# ten are recorded here.
 im_flags <- tibble::tribble(
   ~type,      ~code, ~name,                    ~description,
   "FLAGQUA",  "L",   "below detection",        "Less than detection limit; the detection limit is given as the value",
