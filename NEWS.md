@@ -341,6 +341,17 @@ network examples are wrapped in `try()` and the live tests are skipped under
   the function used for a release fetched at run time, rather than a copy of
   its own. Rebuilt from version 2, every table is identical to the one
   shipped.
+* **The package works loaded but not attached.** Package code referred to
+  the bundled tables by bare name, which resolves only once `library(icpim)`
+  has put the package on the search path. From a script using `icpim::`, or
+  from a package importing this one, `icpim::im_read()` failed with "object
+  'im_substances' not found" and `icpim::im_manifest()` with "object
+  'im_subprogrammes' not found", while `im_download()` quietly lost the
+  listed address and checksum, because the manifest error was swallowed.
+  `R CMD check`, the examples and the whole test suite attach the package,
+  so none of them noticed. Every bundled table is now reached through one
+  accessor, and a test takes the package off the search path and calls it
+  through `icpim::`.
 
 ## Data
 

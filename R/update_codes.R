@@ -217,14 +217,14 @@ code_cache_complete <- function(version) {
 # have them, otherwise the bundled ones.
 codes_for <- function(which, version = im_version()) {
   version <- resolve_version(version)
-  bundled <- switch(which,
-    substances     = im_substances,
-    parameters     = im_parameters,
-    determinations = im_determinations,
-    pretreatments  = im_pretreatments,
-    sites          = im_sites
-  )
-  if (identical(version, IM_BUNDLED_VERSION)) return(bundled)
+  shipped <- bundled(switch(which,
+    substances     = "im_substances",
+    parameters     = "im_parameters",
+    determinations = "im_determinations",
+    pretreatments  = "im_pretreatments",
+    sites          = "im_sites"
+  ))
+  if (identical(version, IM_BUNDLED_VERSION)) return(shipped)
 
   # First read of an unfamiliar release: fetch once, and remember the attempt
   # so a failure does not retry on every call. A cache that exists but lacks
@@ -239,7 +239,7 @@ codes_for <- function(which, version = im_version()) {
       tab <- read_code_cache(version)[[which]]
     }
   }
-  if (!valid_code_table(tab, which)) return(warn_code_fallback(version, bundled))
+  if (!valid_code_table(tab, which)) return(warn_code_fallback(version, shipped))
   tab
 }
 
@@ -251,7 +251,7 @@ codes_for <- function(which, version = im_version()) {
 # This also catches the maintainer's mistake of moving the default version
 # without rebuilding the bundled lookups: the package then reads a release it
 # has no code lists for, and says so the first time anyone runs it.
-warn_code_fallback <- function(version, bundled) {
+warn_code_fallback <- function(version, shipped) {
   key <- paste0("codes_warned_", version)
   if (!isTRUE(the[[key]])) {
     the[[key]] <- TRUE
@@ -267,5 +267,5 @@ warn_code_fallback <- function(version, bundled) {
              {.file data-raw/make_data.R}."
     ), class = "icpim_code_fallback")
   }
-  bundled
+  shipped
 }

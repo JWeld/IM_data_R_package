@@ -43,9 +43,16 @@ chr_n <- function(x, n) {
   if (length(out) == n) out else rep(NA_character_, n)
 }
 
-# Internal accessor so package code does not depend on lazy-data promises
-# being visible to R CMD check.
-subprog_meta <- function() icpim::im_subprogrammes
+# The bundled tables, reached the one way that works whether or not the
+# package is attached. Lazy-loaded data lives in the namespace's lazydata
+# environment, which package code cannot see by bare name: `im_flags` resolves
+# only once library(icpim) has put the package on the search path, so a bare
+# reference made icpim::im_read() fail with "object 'im_substances' not
+# found" from a script, or from a package that imports this one. `::` looks in
+# the lazydata environment, and is what every reference below goes through.
+bundled <- function(name) getExportedValue("icpim", name)
+
+subprog_meta <- function() bundled("im_subprogrammes")
 
 #' Match a subprogramme code
 #'
@@ -114,7 +121,3 @@ subprog_file <- function(code, version = im_version()) {
   meta$file[match(code, meta$subprog)]
 }
 
-utils::globalVariables(c(
-  "im_subprogrammes", "im_sites", "im_substances", "im_parameters",
-  "im_determinations", "im_pretreatments", "im_flags"
-))

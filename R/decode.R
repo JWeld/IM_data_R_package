@@ -68,13 +68,14 @@ im_decode <- function(x, quiet = TRUE, version = im_version()) {
     p <- codes_for("pretreatments", version)
     x$pretreatment <- lookup(x$PRETRE, p$code, p$name)
   }
+  flags <- bundled("im_flags")
   if ("FLAGSTA" %in% names(x)) {
-    f <- im_flags[im_flags$type == "FLAGSTA", ]
+    f <- flags[flags$type == "FLAGSTA", ]
     x$stat <- lookup(x$FLAGSTA, f$code, f$name)
     x$stat[is.na(x$FLAGSTA)] <- "primary"
   }
   if ("FLAGQUA" %in% names(x)) {
-    f <- im_flags[im_flags$type == "FLAGQUA", ]
+    f <- flags[flags$type == "FLAGQUA", ]
     x$quality <- lookup(x$FLAGQUA, f$code, f$name)
   }
   x
@@ -177,7 +178,7 @@ im_codes <- function(type = c("substance", "parameter", "determination",
     parameter     = codes_for("parameters", version),
     determination = codes_for("determinations", version),
     pretreatment  = codes_for("pretreatments", version),
-    flag          = im_flags
+    flag          = bundled("im_flags")
   )
   if (!is.null(pattern)) {
     hit <- grepl(pattern, tbl$code, ignore.case = TRUE) |

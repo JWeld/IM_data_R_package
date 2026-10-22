@@ -345,10 +345,11 @@ im_manifest <- function(version = im_version(),
                has probably changed how it lists its files."
       ))
     }
+    meta <- subprog_meta()
     out <- tibble::tibble(
-      subprog = im_subprogrammes$subprog,
-      name    = im_subprogrammes$name,
-      file    = im_subprogrammes$file,
+      subprog = meta$subprog,
+      name    = meta$name,
+      file    = meta$file,
       type    = "data",
       size_mb = NA_real_,
       url     = NA_character_,
@@ -400,7 +401,8 @@ parse_file_list <- function(f) {
   )
   # Descriptive names come from the bundled catalogue where we have them; a
   # subprogramme new in this release falls back to its file name.
-  out$name <- im_subprogrammes$name[match(out$subprog, im_subprogrammes$subprog)]
+  meta <- subprog_meta()
+  out$name <- meta$name[match(out$subprog, meta$subprog)]
   derived <- gsub("_", " ", sub("\\.csv$", "", sub("^[A-Za-z]+_", "", out$file)))
   out$name[is.na(out$name) & !is.na(out$subprog)] <-
     derived[is.na(out$name) & !is.na(out$subprog)]
